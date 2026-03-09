@@ -1,17 +1,22 @@
-const express = require('express');
-const router = express.Router();
-const { approveWorker, listPendingWorkers } = require('../controllers/adminController');
-const { protect } = require('../middleware/authMiddleware');
+const express = require('express')
+const router = express.Router()
 
-router.use(protect); // must be logged in
+const { approveWorker, listPendingWorkers } = require('../controllers/adminController')
+const { protect } = require('../middleware/authMiddleware')
 
-// Only admin can access
+router.use(protect)
+
 router.use((req, res, next) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Not authorized' });
-  next();
-});
 
-router.get('/pending-workers', listPendingWorkers);
-router.post('/approve-worker', approveWorker);
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Not authorized" })
+  }
 
-module.exports = router;
+  next()
+
+})
+
+router.get('/pending-workers', listPendingWorkers)
+router.post('/approve-worker', approveWorker)
+
+module.exports = router

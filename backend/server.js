@@ -1,26 +1,38 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const connectDB = require('./config/db');
+const express = require('express')
+const cors = require('cors')
+require('dotenv').config()
 
-connectDB();
+const connectDB = require('./config/db')
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const authRoutes = require('./routes/authRoutes')
+const adminRoutes = require('./routes/adminRoutes')
+const { protect } = require('./middleware/authMiddleware')
 
-const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const app = express()
 
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
+connectDB()
 
-app.get('/', (_, res) => res.send('API is working'));
+app.use(cors())
+app.use(express.json())
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use('/api/auth', authRoutes)
+app.use('/api/admin', adminRoutes)
 
-const { protect } = require('./middleware/authMiddleware');
+app.get('/', (req, res) => {
+  res.send('API is working')
+})
+
 app.get('/api/test', protect, (req, res) => {
-  res.json({ message: 'Protected route working', user: req.user });
-});
+
+  res.json({
+    message: "Protected route working",
+    user: req.user
+  })
+
+})
+
+const PORT = process.env.PORT || 5000
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
