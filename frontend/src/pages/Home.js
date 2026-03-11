@@ -1,14 +1,30 @@
-
-// src/pages/Home.js
-import HomeNavBar from '../components/Navbars/HomeNavBar';
+import HeroSection from "../components/Home/HeroSection";
+import PopularServices from "../components/Home/PopularServices";
+import HowItWorks from "../components/Home/HowItWorks";
+import AISection from "../components/Home/AISection";
+import FeaturedWorkers from "../components/Home/FeaturedWorkers";
+import TrustSection from "../components/Home/TrustSection";
+import Testimonials from "../components/Home/Testimonials";
+import CTASection from "../components/Home/CTASection";
 
 const Home = () => {
   return (
-    <>
-      <HomeNavBar />
-      <h1>Welcome to Smart Local Service Platform</h1>
-      <p>Browse services, get AI support, and more. Please login to request services.</p>
-    </>
+    <div className="bg-slate-50">
+
+      <HeroSection />
+
+      <div className="max-w-7xl mx-auto">
+        <PopularServices />
+        <HowItWorks />
+        <AISection />
+        <FeaturedWorkers />
+        <TrustSection />
+        <Testimonials />
+      </div>
+
+      <CTASection />
+
+    </div>
   );
 };
 

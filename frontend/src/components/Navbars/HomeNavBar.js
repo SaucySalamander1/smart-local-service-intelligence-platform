@@ -2,44 +2,30 @@ import { Link } from "react-router-dom";
 
 const HomeNavbar = () => {
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>
+
+    <nav className="bg-gray-900 text-white px-8 py-4 flex justify-between items-center shadow-lg">
+
+      <div className="text-xl font-bold">
         Local Service Center
       </div>
 
-      <div style={styles.links}>
-        <Link to="/" style={styles.link}>Home</Link>
-        <Link to="/services" style={styles.link}>Services</Link>
-        <Link to="/become-worker" style={styles.link}>Become Worker</Link>
-        <Link to="/login" style={styles.link}>Login</Link>
-        <Link to="/register" style={styles.link}>Register</Link>
-      </div>
-    </nav>
-  );
-};
+      <div className="flex gap-6 font-medium">
 
-const styles = {
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "20px 40px",
-    background: "#1f2937",
-    color: "white"
-  },
-  logo: {
-    fontSize: "20px",
-    fontWeight: "bold"
-  },
-  links: {
-    display: "flex",
-    gap: "20px"
-  },
-  link: {
-    color: "white",
-    textDecoration: "none",
-    fontWeight: "500"
-  }
+        <Link to="/" className="hover:text-cyan-400 transition">Home</Link>
+        <Link to="/services" className="hover:text-cyan-400 transition">Services</Link>
+        <Link to="/become-worker" className="hover:text-cyan-400 transition">Become Worker</Link>
+        <Link to="/contact" className="hover:text-cyan-400 transition">Contact</Link>
+        <Link to="/about" className="hover:text-cyan-400 transition">About</Link>
+
+        <Link to="/login" className="hover:text-cyan-400 transition">Login</Link>
+        <Link to="/register" className="hover:text-cyan-400 transition">Register</Link>
+        <Link to="/admin/login" className="hover:text-red-400 transition">Admin</Link>
+
+      </div>
+
+    </nav>
+
+  );
 };
 
 export default HomeNavbar;

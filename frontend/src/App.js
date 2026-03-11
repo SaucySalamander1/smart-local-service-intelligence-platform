@@ -1,30 +1,51 @@
-import { Routes, Route } from 'react-router-dom';
-import ProtectedRoute from './routes/ProtectedRoute';
+import { Routes, Route } from "react-router-dom";
+import PublicLayout from "./layouts/PublicLayouts";
 
-// Auth pages
-import Register from './pages/Auth/Register';
-import Login from './pages/Auth/Login';
-import AdminLogin from './pages/Auth/AdminLogin';
+import Home from "./pages/Home";
+import Register from "./pages/Auth/Register";
+import Login from "./pages/Auth/Login";
+import AdminLogin from "./pages/Auth/AdminLogin";
 
-// Dashboards
-import CustomerDashboard from './pages/Customer/Dashboard';
-import WorkerDashboard from './pages/Worker/Dashboard';
-import AdminDashboard from './pages/Admin/Dashboard';
+import CustomerDashboard from "./pages/Customer/Dashboard";
+import WorkerDashboard from "./pages/Worker/Dashboard";
+import WorkerServices from "./pages/Worker/Services";   // ✅ NEW IMPORT
+import AdminDashboard from "./pages/Admin/Dashboard";
 
-// Home
-import Home from './pages/Home';
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Services from "./pages/Services";
+import BecomeWorker from "./pages/BecomeWorker";
+
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
 
-      {/* Auth routes */}
-      <Route path="/register" element={<Register />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
+      {/* PUBLIC LAYOUT */}
+      <Route element={<PublicLayout />}>
 
-      {/* Protected Dashboards */}
+        <Route path="/" element={<Home />} />
+
+        <Route path="/login" element={<Login />} />
+
+        <Route path="/register" element={<Register />} />
+
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route path="/services" element={<Services />} />
+
+        <Route path="/become-worker" element={<BecomeWorker />} />
+
+        <Route path="/contact" element={<Contact />} />
+        
+        <Route path="/about" element={<About />} />
+        
+
+      </Route>
+
+      {/* DASHBOARDS */}
+
       <Route
         path="/customer/dashboard"
         element={
@@ -33,6 +54,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/worker/dashboard"
         element={
@@ -41,6 +63,18 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* ✅ NEW WORKER SERVICES ROUTE */}
+
+      <Route
+        path="/worker/services"
+        element={
+          <ProtectedRoute role="worker">
+            <WorkerServices />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/admin/dashboard"
         element={
@@ -49,6 +83,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
     </Routes>
   );
 }

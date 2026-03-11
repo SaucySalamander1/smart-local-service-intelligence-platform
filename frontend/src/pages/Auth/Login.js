@@ -1,45 +1,99 @@
-import { useState, useContext, useEffect } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../../api/auth';
+import { useState, useContext, useEffect } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
-  const [form, setForm] = useState({ email: '', password: '' });
+
+  const [form,setForm] = useState({
+    email:"",
+    password:""
+  });
+
   const { loginUser, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      if (user.role === 'worker') navigate('/worker/dashboard');
-      else if (user.role === 'customer') navigate('/customer/dashboard');
+  useEffect(()=>{
+
+    if(user){
+      if(user.role === "customer") navigate("/customer/dashboard");
+      if(user.role === "worker") navigate("/worker/dashboard");
     }
-  }, [user, navigate]);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  },[user,navigate]);
 
-  const handleSubmit = async (e) => {
+  const handleChange = (e)=>{
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async(e)=>{
     e.preventDefault();
-    try {
-      const data = await login(form);
-      loginUser(data);
 
-      if (data.role === 'worker') navigate('/worker/dashboard');
-      else navigate('/customer/dashboard');
-    } catch (err) {
-      alert(err.message || 'Login failed');
+    try{
+      await loginUser(form);
+    }
+    catch(err){
+      alert(err.response?.data?.message || "Login failed");
     }
   };
 
-  return (
-    <div style={{ maxWidth: '400px', margin: 'auto' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input name="email" placeholder="Email" type="email" onChange={handleChange} required />
-        <input name="password" placeholder="Password" type="password" onChange={handleChange} required />
-        <button type="submit">Login</button>
-      </form>
+  return(
+
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+
+      <div className="bg-white shadow-2xl rounded-2xl p-10 w-96">
+
+        <h2 className="text-3xl font-bold text-center mb-6">
+          Welcome Back
+        </h2>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+            className="border p-3 rounded-lg focus:ring-2 focus:ring-indigo-400"
+          />
+
+          <button
+            type="submit"
+            className="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition transform hover:scale-105"
+          >
+            Login
+          </button>
+
+        </form>
+
+        <p className="text-center mt-4 text-sm">
+          Don't have an account?
+          <Link
+            to="/register"
+            className="text-indigo-600 font-semibold ml-1 hover:underline"
+          >
+            Register
+          </Link>
+        </p>
+
+      </div>
+
     </div>
+
   );
+
 };
 
 export default Login;
