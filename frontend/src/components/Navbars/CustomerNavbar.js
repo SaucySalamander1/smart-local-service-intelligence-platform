@@ -26,6 +26,10 @@ const CustomerNavBar = () => {
           Home
         </Link>
 
+        <Link to="/customer/browse-workers" className="hover:text-cyan-400 transition">
+          Browse Workers
+        </Link>
+
         <Link to="/customer/dashboard" className="hover:text-cyan-400 transition">
           Dashboard
         </Link>

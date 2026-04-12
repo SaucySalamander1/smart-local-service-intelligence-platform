@@ -20,6 +20,7 @@ export const AuthProvider = ({children}) => {
     localStorage.setItem('token',data.token)
 
     const userData = {
+      id:data.id,
       name:data.name,
       role:data.role
     }
@@ -39,6 +40,7 @@ export const AuthProvider = ({children}) => {
     localStorage.setItem('token',data.token)
 
     const userData = {
+      id:data.id,
       name:data.name,
       role:data.role
     }

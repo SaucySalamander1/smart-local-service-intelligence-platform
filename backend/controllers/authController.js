@@ -81,6 +81,7 @@ exports.loginUser = async (req, res) => {
 
     res.json({
       token,
+      id: user._id,
       name: user.name,
       role: user.role
     })
@@ -124,6 +125,7 @@ exports.adminLogin = async (req, res) => {
 
     res.json({
       token,
+      id: user._id,
       name: user.name,
       role: user.role
     })

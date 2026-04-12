@@ -7,6 +7,8 @@ import Login from "./pages/Auth/Login";
 import AdminLogin from "./pages/Auth/AdminLogin";
 
 import CustomerDashboard from "./pages/Customer/Dashboard";
+import BrowseWorkers from "./pages/Customer/BrowseWorkers";
+import WorkerProfile from "./pages/WorkerProfile";
 import WorkerDashboard from "./pages/Worker/Dashboard";
 import WorkerServices from "./pages/Worker/Services";   // ✅ NEW IMPORT
 import AdminDashboard from "./pages/Admin/Dashboard";
@@ -58,6 +60,22 @@ function App() {
           <ProtectedRoute role="customer">
             <CustomerDashboard />
           </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/customer/browse-workers"
+        element={
+          <ProtectedRoute role="customer">
+            <BrowseWorkers />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/worker-profile/:workerId"
+        element={
+          <WorkerProfile />
         }
       />
 
