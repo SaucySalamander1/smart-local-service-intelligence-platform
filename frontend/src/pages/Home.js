@@ -13,6 +13,29 @@ const Home = () => {
 
       <HeroSection />
 
+      <div style={{ textAlign: "center", margin: "20px" }}>
+        <button 
+          onClick={() => window.location.href="/estimate"}
+          style={{ margin: "10px", padding: "10px", background:"#0041C2", color:"#fff" }}
+        >
+          Cost Estimation
+        </button>
+
+        <button 
+          onClick={() => window.location.href="/breakdown"}
+          style={{ margin: "10px", padding: "10px", background:"#0041C2", color:"#fff" }}
+        >
+          Cost Breakdown
+        </button>
+
+        <button 
+          onClick={() => window.location.href="/review"}
+          style={{ margin: "10px", padding: "10px", background:"#0041C2", color:"#fff" }}
+        >
+          Review System
+        </button>
+      </div>
+
       <div className="max-w-7xl mx-auto">
         <PopularServices />
         <HowItWorks />
