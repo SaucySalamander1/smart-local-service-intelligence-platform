@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import PublicLayout from "./layouts/PublicLayouts";
+import AIChat from "./pages/AIChat";
 
 import Home from "./pages/Home";
 import Register from "./pages/Auth/Register";
@@ -43,6 +44,8 @@ function App() {
         <Route path="/become-worker" element={<BecomeWorker />} />
 
         <Route path="/contact" element={<Contact />} />
+
+        <Route path="/ai-chat" element={<AIChat />} />
         
         <Route path="/about" element={<About />} />
         

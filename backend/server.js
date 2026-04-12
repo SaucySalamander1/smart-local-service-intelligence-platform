@@ -13,6 +13,8 @@ const workerRoutes = require('./routes/workerRoutes')
 const messageRoutes = require('./routes/messageRoutes')
 const { protect } = require('./middleware/authMiddleware')
 
+const aiRoutes = require('./routes/aiRoutes');
+
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
@@ -33,8 +35,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
+
 app.use('/api/workers', workerRoutes)
 app.use('/api/messages', messageRoutes)
+
+app.use('/api/ai', aiRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('API is working')
