@@ -25,20 +25,31 @@ router.post('/estimate', (req, res) => {
 
 // -------- FEATURE 2: COST BREAKDOWN --------
 router.post('/breakdown', (req, res) => {
-    const { urgency } = req.body;
+    const { service, urgency, extraParts } = req.body;
 
-    let labor = 300;
-    let parts = 200;
-    let urgency_charge = 0;
+    let labor = 0;
+    let parts = 0;
 
-    if (urgency === "urgent") urgency_charge = 150;
-    if (urgency === "emergency") urgency_charge = 300;
+    // service base cost
+    if (service === "plumbing") labor = 500;
+    if (service === "electrical") labor = 700;
+    if (service === "ac") labor = 1000;
+
+    // urgency multiplier
+    let urgencyCharge = 0;
+    if (urgency === "urgent") urgencyCharge = 150;
+    if (urgency === "emergency") urgencyCharge = 300;
+
+    // extra parts (user option)
+    parts = extraParts ? 200 : 0;
+
+    const total = labor + parts + urgencyCharge;
 
     res.json({
         labor,
         parts,
-        urgency: urgency_charge,
-        total: labor + parts + urgency_charge
+        urgency: urgencyCharge,
+        total
     });
 });
 
