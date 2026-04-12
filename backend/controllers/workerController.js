@@ -19,7 +19,7 @@ exports.getWorkers = async (req, res) => {
 
     // Fetch workers and sort by rating (highest first)
     const workers = await User.find(query)
-      .select('name email skills rating experience serviceArea phone bio profilePicture')
+      .select('name email skills rating experience serviceArea phone bio profilePicture availability reviewCount certifications verification')
       .sort({ rating: -1 }); // Sort by rating descending
 
     res.status(200).json({
@@ -42,8 +42,7 @@ exports.getWorkerById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const worker = await User.findById(id)
-      .select('name email skills rating experience serviceArea phone bio profilePicture');
+    const worker = await User.findById(id);
 
     if (!worker || worker.role !== 'worker') {
       return res.status(404).json({
@@ -151,6 +150,53 @@ exports.updateWorkerProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating profile',
+      error: error.message
+    });
+  }
+};
+
+// Upload profile picture
+exports.uploadProfilePicture = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    // Find worker
+    const worker = await User.findById(id);
+
+    if (!worker || worker.role !== 'worker') {
+      return res.status(404).json({
+        success: false,
+        message: 'Worker not found'
+      });
+    }
+
+    // Create file URL path
+    const fileUrl = `/uploads/profiles/${req.file.filename}`;
+
+    // Update worker's profile picture
+    worker.profilePicture = fileUrl;
+    await worker.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      data: {
+        profilePicture: fileUrl,
+        worker: worker
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading profile picture',
       error: error.message
     });
   }

@@ -1,10 +1,11 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getWorkerById, updateWorkerProfile } from '../../api/workers';
-import { AuthContext } from '../../context/AuthContext';
-import CustomerNavBar from '../../components/Navbars/CustomerNavbar';
-import WorkerNavbar from '../../components/Navbars/WorkerNavbar';
-import Footer from '../../components/Footer/Footer';
+import { getWorkerById, updateWorkerProfile, uploadProfilePicture } from '../api/workers';
+import { AuthContext } from '../context/AuthContext';
+import CustomerNavBar from '../components/Navbars/CustomerNavbar';
+import WorkerNavbar from '../components/Navbars/WorkerNavbar';
+import Footer from '../components/Footer/Footer';
+import ChatModal from '../components/ChatModal';
 
 const WorkerProfile = () => {
   const { workerId } = useParams();
@@ -16,6 +17,10 @@ const WorkerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showUnavailableModal, setShowUnavailableModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -91,9 +96,33 @@ const WorkerProfile = () => {
     }));
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
+
+      // Upload file if selected
+      if (selectedFile) {
+        const uploadResponse = await uploadProfilePicture(workerId, selectedFile);
+        formData.profilePicture = uploadResponse.data.profilePicture;
+        setWorker(prev => ({ ...prev, profilePicture: uploadResponse.data.profilePicture }));
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      }
+
+      // Update profile
       await updateWorkerProfile(workerId, formData);
       setWorker({ ...worker, ...formData });
       setIsEditing(false);
@@ -104,6 +133,14 @@ const WorkerProfile = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleContactWorker = () => {
+    if (worker.availability === 'unavailable' || worker.availability === 'busy') {
+      setShowUnavailableModal(true);
+    } else {
+      setIsChatOpen(true);
     }
   };
 
@@ -171,7 +208,11 @@ const WorkerProfile = () => {
                       Save Changes
                     </button>
                     <button
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => {
+                        setIsEditing(false);
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                      }}
                       className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition"
                     >
                       Cancel
@@ -194,16 +235,59 @@ const WorkerProfile = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Profile Picture Section */}
               <div className="md:col-span-1">
-                {worker.profilePicture ? (
-                  <img
-                    src={worker.profilePicture}
-                    alt={worker.name}
-                    className="w-full h-64 object-cover rounded-lg shadow-md"
-                  />
-                ) : (
-                  <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400 text-lg">No Photo</span>
+                {isOwner && isEditing ? (
+                  <div>
+                    {/* File Input for Edit Mode */}
+                    <label className="block cursor-pointer">
+                      <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-cyan-500 transition">
+                        {previewUrl ? (
+                          <img
+                            src={previewUrl}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : worker.profilePicture ? (
+                          <img
+                            src={worker.profilePicture}
+                            alt={worker.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className="text-gray-400">Click to upload</span>
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </label>
+                    {selectedFile && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Selected: {selectedFile.name}
+                      </p>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    {worker.profilePicture ? (
+                      <img
+                        src={worker.profilePicture}
+                        alt={worker.name}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ) : (
+                      <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-lg">No Photo</span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Rating and Review Count */}
@@ -240,6 +324,7 @@ const WorkerProfile = () => {
                       <option value="online">Online</option>
                       <option value="offline">Offline</option>
                       <option value="busy">Busy</option>
+                      <option value="unavailable">Unavailable</option>
                     </select>
                   </div>
                 ) : (
@@ -418,7 +503,10 @@ const WorkerProfile = () => {
 
                 {/* Contact Button (only for customers viewing worker profile) */}
                 {!isOwner && user?.role === 'customer' && (
-                  <button className="w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition font-semibold text-lg">
+                  <button
+                    onClick={handleContactWorker}
+                    className="w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition font-semibold text-lg"
+                  >
                     Contact Worker
                   </button>
                 )}
@@ -429,6 +517,42 @@ const WorkerProfile = () => {
       </main>
 
       <Footer />
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        otherUserId={workerId}
+        otherUserName={worker?.name}
+        otherUserPicture={worker?.profilePicture}
+      />
+
+      {/* Worker Unavailable Modal */}
+      {showUnavailableModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6">
+            <div className="text-center">
+              <div className="mb-4 flex justify-center">
+                <div className="bg-red-100 rounded-full p-4">
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Worker Not Available</h2>
+              <p className="text-gray-600 mb-6">
+                This worker is currently {worker?.availability} and cannot be contacted right now. Please try again later.
+              </p>
+              <button
+                onClick={() => setShowUnavailableModal(false)}
+                className="w-full bg-cyan-500 text-white py-2 rounded-lg hover:bg-cyan-600 transition font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

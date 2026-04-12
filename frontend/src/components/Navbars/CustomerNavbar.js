@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import ChatIcon from "../ChatIcon";
 
 const CustomerNavBar = () => {
 
@@ -37,6 +38,8 @@ const CustomerNavBar = () => {
       </div>
 
       <div className="flex items-center gap-6">
+
+        <ChatIcon />
 
         <span className="text-sm text-gray-300">
           Welcome, {user?.name}

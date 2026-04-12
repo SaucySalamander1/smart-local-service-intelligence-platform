@@ -37,3 +37,18 @@ export const updateWorkerProfile = async (workerId, profileData) => {
   return res.data;
 };
 
+export const uploadProfilePicture = async (workerId, file) => {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+
+  const res = await axios.post(`${API_URL}/${workerId}/upload-picture`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  return res.data;
+};
+

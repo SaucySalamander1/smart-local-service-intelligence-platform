@@ -159,93 +159,120 @@ const BrowseWorkers = () => {
         {/* Workers Grid */}
         {!loading && filteredWorkers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredWorkers.map(worker => (
-              <div
-                key={worker._id}
-                onClick={() => navigate(`/worker-profile/${worker._id}`)}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6 cursor-pointer"
-              >
-                {/* Profile Picture */}
-                {worker.profilePicture ? (
-                  <img
-                    src={worker.profilePicture}
-                    alt={worker.name}
-                    className="w-full h-40 object-cover rounded-lg mb-4"
-                  />
-                ) : (
-                  <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                    <span className="text-gray-400">No Photo</span>
-                  </div>
-                )}
-
-                {/* Name */}
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{worker.name}</h3>
-
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex text-yellow-400">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className={i < Math.floor(worker.rating) ? '★' : '☆'}>
-                        ★
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">({worker.rating}/5)</span>
-                </div>
-
-                {/* Experience */}
-                <p className="text-sm text-gray-600 mb-2">
-                  <span className="font-semibold">Experience:</span> {worker.experience} years
-                </p>
-
-                {/* Service Area */}
-                <p className="text-sm text-gray-600 mb-3">
-                  <span className="font-semibold">Service Area:</span> {worker.serviceArea || 'N/A'}
-                </p>
-
-                {/* Skills */}
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Skills:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {worker.skills && worker.skills.length > 0 ? (
-                      worker.skills.map(skill => (
-                        <span
-                          key={skill}
-                          className="inline-block bg-cyan-100 text-cyan-800 text-xs px-3 py-1 rounded-full"
-                        >
-                          {skill}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-gray-500">No skills listed</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bio */}
-                {worker.bio && (
-                  <p className="text-sm text-gray-600 mb-4">{worker.bio}</p>
-                )}
-
-                {/* Contact Info */}
-                {worker.phone && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    <span className="font-semibold">Phone:</span> {worker.phone}
-                  </p>
-                )}
-
-                {/* Contact Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/worker-profile/${worker._id}`);
-                  }}
-                  className="w-full bg-cyan-500 text-white py-2 rounded-lg hover:bg-cyan-600 transition font-medium"
+            {filteredWorkers.map((worker) => {
+              const isUnavailable = worker.availability === 'unavailable' || worker.availability === 'busy';
+              
+              return (
+                <div
+                  key={worker._id}
+                  onClick={() => !isUnavailable && navigate(`/worker-profile/${worker._id}`)}
+                  className={`bg-white rounded-lg shadow-md hover:shadow-lg transition p-6 ${
+                    isUnavailable ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
                 >
-                  View Profile
-                </button>
-              </div>
-            ))}
+                  {/* Profile Picture */}
+                  {worker.profilePicture ? (
+                    <img
+                      src={worker.profilePicture}
+                      alt={worker.name}
+                      className="w-full h-40 object-cover rounded-lg mb-4"
+                    />
+                  ) : (
+                    <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                      <span className="text-gray-400">No Photo</span>
+                    </div>
+                  )}
+
+                  {/* Name */}
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{worker.name}</h3>
+
+                  {/* Rating */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex text-yellow-400">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i}>{i < Math.floor(worker.rating) ? '★' : '☆'}</span>
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600">({worker.rating}/5)</span>
+                  </div>
+
+                  {/* Experience */}
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-semibold">Experience:</span> {worker.experience} years
+                  </p>
+
+                  {/* Service Area */}
+                  <p className="text-sm text-gray-600 mb-3">
+                    <span className="font-semibold">Service Area:</span> {worker.serviceArea || 'N/A'}
+                  </p>
+
+                  {/* Skills */}
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Skills:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {worker.skills && worker.skills.length > 0 ? (
+                        worker.skills.map((skill) => (
+                          <span
+                            key={skill}
+                            className="inline-block bg-cyan-100 text-cyan-800 text-xs px-3 py-1 rounded-full"
+                          >
+                            {skill}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-500">No skills listed</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {worker.bio && (
+                    <p className="text-sm text-gray-600 mb-4">{worker.bio}</p>
+                  )}
+
+                  {/* Contact Info */}
+                  {worker.phone && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      <span className="font-semibold">Phone:</span> {worker.phone}
+                    </p>
+                  )}
+
+                  {/* Availability Status */}
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Status:</p>
+                    <span className={`inline-block capitalize px-3 py-1 rounded-full text-xs font-semibold ${
+                      worker.availability === 'online' ? 'bg-green-200 text-green-800' :
+                      worker.availability === 'busy' ? 'bg-yellow-200 text-yellow-800' :
+                      worker.availability === 'unavailable' ? 'bg-red-200 text-red-800' :
+                      'bg-gray-200 text-gray-800'
+                    }`}>
+                      {worker.availability === 'offline' ? 'Offline' :
+                       worker.availability === 'busy' ? 'Busy - Call Back Later' :
+                       worker.availability === 'unavailable' ? 'Not Available' :
+                       'Online'}
+                    </span>
+                  </div>
+
+                  {/* View Profile Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isUnavailable) {
+                        navigate(`/worker-profile/${worker._id}`);
+                      }
+                    }}
+                    disabled={isUnavailable}
+                    className={`w-full py-2 rounded-lg transition font-medium ${
+                      isUnavailable
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        : 'bg-cyan-500 text-white hover:bg-cyan-600'
+                    }`}
+                  >
+                    {isUnavailable ? 'Not Available' : 'View Profile'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ) : (
           !loading && (

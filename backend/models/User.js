@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     bio: { type: String },
     phone: { type: String },
     reviewCount: { type: Number, default: 0 }, // Total number of reviews
-    availability: { type: String, enum: ['online', 'offline', 'busy'], default: 'offline' }, // Worker availability status
+    availability: { type: String, enum: ['online', 'offline', 'busy', 'unavailable'], default: 'offline' }, // Worker availability status
   },
   { timestamps: true }
 );

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import ChatIcon from "../ChatIcon";
 
 const WorkerNavBar = () => {
 
@@ -34,9 +35,15 @@ const WorkerNavBar = () => {
           My Services
         </Link>
 
+        <Link to={`/worker-profile/${user?.id}`} className="hover:text-orange-400 transition">
+          My Profile
+        </Link>
+
       </div>
 
       <div className="flex items-center gap-6">
+
+        <ChatIcon />
 
         <span className="text-sm text-gray-300">
           Welcome, {user?.name}

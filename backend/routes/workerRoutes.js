@@ -1,13 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 const {
   getWorkers,
   getWorkerById,
   getServiceAreas,
   getAvailableSkills,
-  updateWorkerProfile
+  updateWorkerProfile,
+  uploadProfilePicture
 } = require('../controllers/workerController');
 
 // Public routes (no authentication required)
@@ -18,5 +20,6 @@ router.get('/:id', getWorkerById);
 
 // Protected routes (authentication required)
 router.put('/:id', protect, updateWorkerProfile);
+router.post('/:id/upload-picture', protect, upload.single('profilePicture'), uploadProfilePicture);
 
 module.exports = router;
