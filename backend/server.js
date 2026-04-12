@@ -8,6 +8,8 @@ const authRoutes = require('./routes/authRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const { protect } = require('./middleware/authMiddleware')
 
+const aiRoutes = require('./routes/aiRoutes');
+
 const app = express()
 
 connectDB()
@@ -17,6 +19,7 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is working')
