@@ -17,6 +17,9 @@ import Services from "./pages/Services";
 import BecomeWorker from "./pages/BecomeWorker";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import CostEstimation from "./pages/CostEstimation";
+import Breakdown from "./pages/Breakdown";
+import Review from "./pages/Review";
 
 function App() {
   return (
@@ -41,6 +44,9 @@ function App() {
         
         <Route path="/about" element={<About />} />
         
+        <Route path="/estimate" element={<CostEstimation />} />
+        <Route path="/breakdown" element={<Breakdown />} />
+        <Route path="/review" element={<Review />} />
 
       </Route>
 
@@ -63,7 +69,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-
+   
       {/* ✅ NEW WORKER SERVICES ROUTE */}
 
       <Route
@@ -87,5 +93,4 @@ function App() {
     </Routes>
   );
 }
-
 export default App;
