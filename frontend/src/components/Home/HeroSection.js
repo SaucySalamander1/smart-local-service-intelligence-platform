@@ -23,29 +23,24 @@ const HeroSection = () => {
 
         <p className="mt-6 text-lg text-blue-100">
           Describe your problem and our AI assistant will guide you
-          to the right solution or professional worker.
         </p>
 
         <div className="mt-10 flex justify-center">
-
           <input
             type="text"
             placeholder="Describe your problem..."
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAskAI();
-            }}
+            onKeyDown={(e) => e.key === "Enter" && handleAskAI()}
             className="px-4 py-3 w-72 md:w-96 rounded-l-lg text-black outline-none"
           />
 
           <button
             onClick={handleAskAI}
-            className="bg-green-500 px-6 py-3 rounded-r-lg hover:bg-green-600 transition"
+            className="bg-green-500 px-6 py-3 rounded-r-lg hover:bg-green-600"
           >
             Ask AI
           </button>
-
         </div>
 
       </div>
