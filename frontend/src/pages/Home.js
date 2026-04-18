@@ -6,6 +6,8 @@ import FeaturedWorkers from "../components/Home/FeaturedWorkers";
 import TrustSection from "../components/Home/TrustSection";
 import Testimonials from "../components/Home/Testimonials";
 import CTASection from "../components/Home/CTASection";
+import LiveActivitySection from "../components/Home/LiveActivitySection";
+import EmergencyResponseSection from "../components/Home/EmergencyResponseSection";
 
 const Home = () => {
   return (
@@ -41,7 +43,9 @@ const Home = () => {
         <HowItWorks />
         <AISection />
         <FeaturedWorkers />
+        <LiveActivitySection/>
         <TrustSection />
+        <EmergencyResponseSection />
         <Testimonials />
       </div>
 

@@ -1,18 +1,23 @@
 import CustomerNavBar from '../../components/Navbars/CustomerNavbar';
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, MapPin, AlertTriangle } from "lucide-react";
 
 export default function CustomerDashboard() {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+  const handleServiceClick = (service) => {
+    navigate("/ai-chat", { state: { problem: service } });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ───────── NAVBAR ───────── */}
+      {/* NAVBAR */}
       <CustomerNavBar />
 
-      {/* ───────── HEADER ───────── */}
+      {/* HEADER */}
       <div className="bg-white shadow-sm p-4 flex items-center justify-between">
         
         {/* Search */}
@@ -30,24 +35,32 @@ export default function CustomerDashboard() {
         {/* Right icons */}
         <div className="flex items-center gap-4">
           <Bell className="text-gray-600 cursor-pointer" />
-          <div className="flex items-center gap-2 cursor-pointer">
+
+          {/* ✅ FIXED PROFILE BUTTON */}
+          <div
+            onClick={() => navigate("/customer/profile")}
+            className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
+          >
             <User className="text-gray-600" />
             <span className="text-sm font-medium">Profile</span>
           </div>
         </div>
       </div>
 
-      {/* ───────── AI ASSISTANT ───────── */}
+      {/* AI ASSISTANT */}
       <div className="p-6">
-        <div className="bg-blue-600 text-white rounded-2xl p-5 shadow">
+        <div 
+          onClick={() => navigate("/ai-chat")}
+          className="bg-blue-600 text-white rounded-2xl p-5 shadow cursor-pointer hover:bg-blue-700"
+        >
           <h2 className="text-lg font-semibold">💬 AI Assistant</h2>
           <p className="text-sm mt-1 text-blue-100">
-            What do you need help with?
+            Ask anything about your problem
           </p>
         </div>
       </div>
 
-      {/* ───────── QUICK SERVICES ───────── */}
+      {/* QUICK SERVICES */}
       <div className="px-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-3">
           Quick Services
@@ -57,6 +70,7 @@ export default function CustomerDashboard() {
           {["Plumber", "Electrician", "Transport", "AC Repair"].map((item) => (
             <button
               key={item}
+              onClick={() => handleServiceClick(item)}
               className="bg-white p-4 rounded-xl shadow hover:shadow-md transition text-sm font-medium"
             >
               {item}
@@ -65,7 +79,7 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* ───────── ACTIVE REQUESTS ───────── */}
+      {/* ACTIVE REQUESTS */}
       <div className="p-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-3">
           Active Requests
@@ -83,7 +97,7 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* ───────── NEARBY SERVICES ───────── */}
+      {/* NEARBY SERVICES */}
       <div className="px-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-3">
           Nearby Services
@@ -108,7 +122,7 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* ───────── AI RECOMMENDATIONS ───────── */}
+      {/* AI RECOMMENDATIONS */}
       <div className="p-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-3">
           AI Recommendations
@@ -116,17 +130,17 @@ export default function CustomerDashboard() {
 
         <div className="bg-white rounded-xl p-4 shadow">
           <p className="text-sm">
-            Based on your recent issue, we recommend checking:
+            Based on your recent issue, we recommend:
           </p>
 
           <ul className="mt-2 text-sm list-disc ml-5 text-gray-600">
             <li>Electrical wiring inspection</li>
-            <li>Nearby certified electrician</li>
+            <li>Hire a certified electrician</li>
           </ul>
         </div>
       </div>
 
-      {/* ───────── EMERGENCY BUTTON ───────── */}
+      {/* EMERGENCY BUTTON */}
       <div className="fixed bottom-6 right-6">
         <button className="bg-red-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-red-700 transition">
           <AlertTriangle size={18} />

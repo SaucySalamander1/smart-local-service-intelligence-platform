@@ -27,6 +27,7 @@ import AdminJobs from "./pages/Admin/AdminJobs";
 
 // Dashboard pages
 import CustomerDashboard from "./pages/Customer/Dashboard";
+import CustomerProfile from "./pages/Customer/Profile";
 import BrowseWorkers from "./pages/Customer/BrowseWorkers";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerDashboard from "./pages/Worker/Dashboard";
@@ -65,6 +66,8 @@ function App() {
         element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
       <Route path="/customer/browse-workers"
         element={<ProtectedRoute role="customer"><BrowseWorkers /></ProtectedRoute>} />
+      <Route path="/customer/profile" 
+        element={<CustomerProfile />} />
       <Route path="/customer/my-jobs"
         element={<ProtectedRoute role="customer"><MyJobs /></ProtectedRoute>}/>
       <Route path="/customer/jobs/:id"
