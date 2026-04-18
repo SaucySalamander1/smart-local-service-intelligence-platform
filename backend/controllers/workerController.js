@@ -1,26 +1,41 @@
+// backend/controllers/workerController.js
 const User = require('../models/User');
 
-// Get all workers with location filtering and rating-based ranking
+// ─── GET ALL WORKERS ──────────────────────────────────────────────────────────
+// Supports: serviceArea, skill, category, area, sort (emergency|rating|jobs)
 exports.getWorkers = async (req, res) => {
   try {
-    const { serviceArea, skill } = req.query;
+    const { serviceArea, skill, category, area, sort } = req.query;
 
     let query = { role: 'worker', isApproved: true };
 
-    // Filter by service area if provided
-    if (serviceArea) {
-      query.serviceArea = { $regex: serviceArea, $options: 'i' }; // Case-insensitive
+    // Filter by service area (supports both param names)
+    const areaFilter = serviceArea || area;
+    if (areaFilter) {
+      query.serviceArea = { $regex: areaFilter, $options: 'i' };
     }
 
-    // Filter by skill if provided
-    if (skill) {
-      query.skills = { $in: [skill] };
+    // Filter by skill (supports both param names)
+    const skillFilter = skill || category;
+    if (skillFilter && skillFilter !== 'general') {
+      query.skills = { $in: [skillFilter] };
     }
 
-    // Fetch workers and sort by rating (highest first)
-    const workers = await User.find(query)
-      .select('name email skills rating experience serviceArea phone bio profilePicture availability reviewCount certifications verification')
-      .sort({ rating: -1 }); // Sort by rating descending
+    let workers = await User.find(query)
+      .select('name email skills rating experience serviceArea phone bio profilePicture availability reviewCount certifications jobsDone payRange')
+      .sort({ rating: -1 });
+
+    // ✅ Emergency sort — online first, then composite score
+    if (sort === 'emergency') {
+      workers = workers
+        .map(w => ({ ...w.toObject(), _score: calcScore(w, skillFilter, areaFilter) }))
+        .sort((a, b) => {
+          const aOnline = a.availability === 'online' ? 1 : 0;
+          const bOnline = b.availability === 'online' ? 1 : 0;
+          if (bOnline !== aOnline) return bOnline - aOnline;
+          return b._score - a._score;
+        });
+    }
 
     res.status(200).json({
       success: true,
@@ -37,97 +52,59 @@ exports.getWorkers = async (req, res) => {
   }
 };
 
-// Get a single worker by ID
+// ─── GET SINGLE WORKER ────────────────────────────────────────────────────────
 exports.getWorkerById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const worker = await User.findById(id);
 
     if (!worker || worker.role !== 'worker') {
-      return res.status(404).json({
-        success: false,
-        message: 'Worker not found'
-      });
+      return res.status(404).json({ success: false, message: 'Worker not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: worker
-    });
-
+    res.status(200).json({ success: true, data: worker });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching worker',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error fetching worker', error: error.message });
   }
 };
 
-// Get service areas (unique values for filtering)
+// ─── GET SERVICE AREAS ────────────────────────────────────────────────────────
 exports.getServiceAreas = async (req, res) => {
   try {
-    const areas = await User.find({ role: 'worker', isApproved: true })
-      .distinct('serviceArea');
-
-    res.status(200).json({
-      success: true,
-      data: areas.filter(area => area) // Remove null/undefined values
-    });
-
+    const areas = await User.find({ role: 'worker', isApproved: true }).distinct('serviceArea');
+    res.status(200).json({ success: true, data: areas.filter(area => area) });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching service areas',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error fetching service areas', error: error.message });
   }
 };
 
-// Get all available skills (unique values for filtering)
+// ─── GET AVAILABLE SKILLS ─────────────────────────────────────────────────────
 exports.getAvailableSkills = async (req, res) => {
   try {
     const workers = await User.find({ role: 'worker', isApproved: true });
     const skillsSet = new Set();
-
     workers.forEach(worker => {
       if (worker.skills && Array.isArray(worker.skills)) {
         worker.skills.forEach(skill => skillsSet.add(skill));
       }
     });
-
-    res.status(200).json({
-      success: true,
-      data: Array.from(skillsSet)
-    });
-
+    res.status(200).json({ success: true, data: Array.from(skillsSet) });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching skills',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error fetching skills', error: error.message });
   }
 };
 
-// Update worker profile (only by the worker themselves)
+// ─── UPDATE WORKER PROFILE ────────────────────────────────────────────────────
 exports.updateWorkerProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, bio, phone, skills, experience, serviceArea, profilePicture, availability, certifications } = req.body;
+    const { name, bio, phone, skills, experience, serviceArea, profilePicture, availability, certifications, payRange } = req.body;
 
-    // Find worker
     const worker = await User.findById(id);
-
     if (!worker || worker.role !== 'worker') {
-      return res.status(404).json({
-        success: false,
-        message: 'Worker not found'
-      });
+      return res.status(404).json({ success: false, message: 'Worker not found' });
     }
 
-    // Update fields
     if (name) worker.name = name;
     if (bio) worker.bio = bio;
     if (phone) worker.phone = phone;
@@ -137,68 +114,51 @@ exports.updateWorkerProfile = async (req, res) => {
     if (profilePicture) worker.profilePicture = profilePicture;
     if (availability) worker.availability = availability;
     if (certifications) worker.certifications = certifications;
+    if (payRange) worker.payRange = payRange;
 
     await worker.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: worker
-    });
-
+    res.status(200).json({ success: true, message: 'Profile updated successfully', data: worker });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error updating profile',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
   }
 };
 
-// Upload profile picture
+// ─── UPLOAD PROFILE PICTURE ───────────────────────────────────────────────────
 exports.uploadProfilePicture = async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded'
-      });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    // Find worker
     const worker = await User.findById(id);
-
     if (!worker || worker.role !== 'worker') {
-      return res.status(404).json({
-        success: false,
-        message: 'Worker not found'
-      });
+      return res.status(404).json({ success: false, message: 'Worker not found' });
     }
 
-    // Create file URL path
     const fileUrl = `/uploads/profiles/${req.file.filename}`;
-
-    // Update worker's profile picture
     worker.profilePicture = fileUrl;
     await worker.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Profile picture uploaded successfully',
-      data: {
-        profilePicture: fileUrl,
-        worker: worker
-      }
-    });
-
+    res.status(200).json({ success: true, message: 'Profile picture uploaded successfully', data: { profilePicture: fileUrl, worker } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading profile picture',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error uploading profile picture', error: error.message });
   }
 };
 
+// ─── COMPOSITE SCORE (for emergency sorting) ──────────────────────────────────
+function calcScore(worker, category, userArea) {
+  let score = 0;
+  const area = (userArea || '').toLowerCase();
+  const workerArea = (worker.serviceArea || '').toLowerCase();
+
+  if (worker.skills && category && worker.skills.includes(category)) score += 10;
+  if (area && workerArea.includes(area)) score += 8;
+  else if (workerArea.includes('dhaka')) score += 3;
+  if (worker.availability === 'online') score += 6;
+  score += (worker.rating || 0);
+  score += Math.min((worker.experience || 0) * 0.5, 5);
+  score += Math.min((worker.jobsDone || 0) / 10, 5);
+  score += Math.min((worker.reviewCount || 0) / 5, 3);
+  return score;
+}

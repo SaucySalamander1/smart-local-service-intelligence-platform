@@ -1,67 +1,54 @@
-// controllers/aiController.js
-const AISession = require("../models/AISession");
-const { startAI, processAnswer, quickDiagnose } = require("../services/aiEngine");
+// backend/controllers/aiController.js
+const { startSession, continueSession, recheckSession } = require("../services/aiEngine");
 
-exports.startSession = async (req, res) => {
+// POST /api/ai/start
+exports.handleStart = async (req, res) => {
   try {
-    const { problem } = req.body;
-    const ai = startAI(problem);
+    const { problem, image, imageMime } = req.body;
+    const userId = req.user._id;
 
-    const session = await AISession.create({
-      user: req.user._id,
-      problem,
-      category: ai.category,
-      currentQuestionIndex: 0,
-      threatScore: ai.threatScore,
-      confidence: ai.confidence,
-      answers: []
-    });
+    if (!problem && !image) {
+      return res.status(400).json({ message: "Please describe your problem or upload an image." });
+    }
 
-    res.json({
-      sessionId: session._id,
-      question: ai.question,
-      category: ai.category
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    const result = await startSession(userId, problem || "Analyze this image", image, imageMime);
+    res.json(result);
+  } catch (err) {
+    console.error("AI START ERROR:", err.message);
+    res.status(500).json({ message: "AI failed to analyze. Please try again." });
   }
 };
 
-exports.answerQuestion = async (req, res) => {
+// POST /api/ai/continue
+exports.handleContinue = async (req, res) => {
   try {
     const { sessionId, answer } = req.body;
 
-    const session = await AISession.findById(sessionId);
-    if (!session) return res.status(404).json({ message: "Session not found" });
-
-    const result = processAnswer(session, answer);
-
-    // SAVE ANSWER
-    session.answers.push({
-      question: session.currentQuestionIndex,
-      answer
-    });
-
-    session.threatScore = result.threatScore || session.threatScore;
-    session.confidence = result.confidence || session.confidence;
-
-    // ✅ FIXED: UPDATE INDEX PROPERLY
-    if (!result.done) {
-      session.currentQuestionIndex = result.nextIndex;
-    } else {
-      session.isCompleted = true;
+    if (!sessionId || !answer) {
+      return res.status(400).json({ message: "Session ID and answer are required." });
     }
 
-    await session.save();
-
+    const result = await continueSession(sessionId, answer);
     res.json(result);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    console.error("AI CONTINUE ERROR:", err.message);
+    res.status(500).json({ message: "AI failed to process answer. Please try again." });
   }
 };
 
-exports.quickDiagnoseController = (req, res) => {
-  const { problem } = req.body;
-  const result = quickDiagnose(problem);
-  res.json(result);
+// POST /api/ai/recheck
+exports.handleRecheck = async (req, res) => {
+  try {
+    const { sessionId, isFixed } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ message: "Session ID is required." });
+    }
+
+    const result = await recheckSession(sessionId, isFixed);
+    res.json(result);
+  } catch (err) {
+    console.error("AI RECHECK ERROR:", err.message);
+    res.status(500).json({ message: "Recheck failed. Please try again." });
+  }
 };

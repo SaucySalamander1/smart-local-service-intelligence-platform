@@ -1,42 +1,40 @@
-// api/ai.js
+// frontend/src/api/ai.js
 import axios from "axios";
 
 const API = "http://localhost:5000/api/ai";
 
 const getTokenHeader = () => {
   const token = localStorage.getItem("token");
-  if (!token) throw new Error("You must be logged in to use AI support");
+  if (!token) throw new Error("You must login first");
   return { Authorization: `Bearer ${token}` };
 };
 
-export const startAI = async (problem) => {
-  try {
-    const res = await axios.post(
-      `${API}/start`,
-      { problem },
-      { headers: getTokenHeader() }
-    );
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      throw new Error("Unauthorized: Please login first");
-    }
-    throw err;
-  }
+// Start new AI session — text or image
+export const startAISession = async (problem, imageBase64 = null, imageMime = null) => {
+  const res = await axios.post(
+    `${API}/start`,
+    { problem, image: imageBase64, imageMime },
+    { headers: getTokenHeader() }
+  );
+  return res.data;
 };
 
-export const answerAI = async (sessionId, answer, messages = []) => {
-  try {
-    const res = await axios.post(
-      `${API}/answer`,
-      { sessionId, answer, messages },
-      { headers: getTokenHeader() }
-    );
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      throw new Error("Unauthorized: Please login first");
-    }
-    throw err;
-  }
+// Continue with follow-up answer
+export const continueAISession = async (sessionId, answer) => {
+  const res = await axios.post(
+    `${API}/continue`,
+    { sessionId, answer },
+    { headers: getTokenHeader() }
+  );
+  return res.data;
+};
+
+// Recheck — did it fix?
+export const recheckAISession = async (sessionId, isFixed) => {
+  const res = await axios.post(
+    `${API}/recheck`,
+    { sessionId, isFixed },
+    { headers: getTokenHeader() }
+  );
+  return res.data;
 };

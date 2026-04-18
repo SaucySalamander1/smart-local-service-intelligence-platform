@@ -1,189 +1,198 @@
 // backend/services/aiEngine.js
+const { analyzeInput, analyzeImage } = require("./groqService");
+const AISession = require("../models/AISession");
+const User = require("../models/User");
 
-const faqData = require("../data/faqData");
-const workers = require("../data/workersData");
-
-const normalize = (text) => text.toLowerCase().trim();
-
-// CATEGORY DETECTION
-const detectCategory = (problem) => {
-  const text = normalize(problem);
-
-  for (let category in faqData) {
-    if (faqData[category].keywords.some((k) => text.includes(k))) {
-      return category;
-    }
-  }
-
-  return "general";
-};
-
-// HUMAN RESPONSE STYLE
-const humanize = (question) => {
-  return `Alright, let’s check this. ${question}`;
-};
-
-// LOCATION DETECTION
-const extractLocation = (text) => {
-  const locations = [
-    "mirpur",
-    "mirpur 10",
-    "uttara",
-    "sector 7",
-    "dhanmondi",
-    "gulshan",
-    "banani",
-    "dhaka",
-  ];
-
-  text = normalize(text);
-  return locations.find((loc) => text.includes(loc)) || "dhaka";
-};
-
-// WORKER SCORING
-const scoreWorker = (worker, category, userLocation) => {
+// ─── WORKER SCORING ───────────────────────────────────────────────────────────
+const scoreWorker = (worker, category, userArea) => {
   let score = 0;
+  const area = (userArea || "").toLowerCase();
+  const workerArea = (worker.serviceArea || "").toLowerCase();
 
-  if (worker.category === category) score += 5;
-
-  if (worker.locations.includes(userLocation)) score += 5;
-  else if (worker.locations.includes("dhaka")) score += 2;
-
-  score += worker.rating;
-  score += worker.jobsDone / 100;
-
+  if (worker.skills && worker.skills.includes(category)) score += 10;
+  if (area && workerArea.includes(area)) score += 8;
+  else if (workerArea.includes("dhaka")) score += 3;
+  if (worker.availability === "online") score += 6;
+  score += (worker.rating || 0);
+  score += Math.min((worker.experience || 0) * 0.5, 5);
+  score += Math.min((worker.jobsDone || 0) / 10, 5);
+  score += Math.min((worker.reviewCount || 0) / 5, 3);
   return score;
 };
 
-// FIND BEST WORKERS
-const findBestWorkers = (category, userText) => {
-  const location = extractLocation(userText);
+// ─── FIND BEST WORKERS ────────────────────────────────────────────────────────
+const findBestWorkers = async (category, userArea = "") => {
+  try {
+    const workers = await User.find({
+      role: "worker",
+      isApproved: true,
+      $or: [
+        { skills: { $in: [category] } },
+        { skills: { $in: ["general"] } }
+      ]
+    }).select("name skills rating experience serviceArea reviewCount availability phone profilePicture jobsDone payRange");
 
-  return workers
-    .map((w) => ({
-      ...w,
-      score: scoreWorker(w, category, location),
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    return workers
+      .map(w => ({
+        id: w._id,
+        name: w.name,
+        skills: w.skills || [],
+        rating: w.rating || 0,
+        experience: w.experience || 0,
+        serviceArea: w.serviceArea || "Dhaka",
+        reviewCount: w.reviewCount || 0,
+        availability: w.availability || "offline",
+        phone: w.phone || "",
+        profilePicture: w.profilePicture || "",
+        jobsDone: w.jobsDone || 0,
+        payRange: w.payRange || { min: 0, max: 0 },
+        score: scoreWorker(w, category, userArea),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  } catch (err) {
+    console.error("Worker fetch error:", err.message);
+    return [];
+  }
 };
 
-// START AI
-exports.startAI = (problem) => {
-  const category = detectCategory(problem);
-  const faqs = faqData[category].faqs;
-
+// ─── FORMAT RESULT WITH WORKERS ───────────────────────────────────────────────
+const formatResult = async (groqResult, sessionId) => {
+  const workers = await findBestWorkers(groqResult.category || "general");
   return {
-    category,
-    question: humanize(faqs[0]?.question || "Explain your issue."),
-    threatScore: 0,
-    confidence: 20,
+    type: "result",
+    sessionId,
+    category: groqResult.category,
+    threatLevel: groqResult.threatLevel,
+    confidence: groqResult.confidence,
+    diagnosis: groqResult.diagnosis,
+    precautions: groqResult.precautions || [],
+    steps: groqResult.steps || [],
+    emergency: groqResult.emergency || { show: false, message: null, callNumber: "999" },
+    workers,
   };
 };
 
-// PROCESS ANSWER
-exports.processAnswer = (session, answer) => {
-  const categoryData = faqData[session.category];
-  const faqs = categoryData.faqs;
-  const currentFaq = faqs[session.currentQuestionIndex];
+// ─── START NEW SESSION ────────────────────────────────────────────────────────
+exports.startSession = async (userId, problem, imageBase64 = null, imageMime = null) => {
+  let groqResult;
 
-  let threat = session.threatScore;
-  let confidence = session.confidence;
-
-  const text = normalize(answer);
-
-  // SMART UNDERSTANDING
-  if (text.includes("not working") || text.includes("no cooling")) {
-    threat += 2;
-    confidence += 15;
-  }
-
-  if (text.includes("smell") || text.includes("burn")) {
-    threat += 4;
-    confidence += 20;
-  }
-
-  if (text.includes("noise")) {
-    threat += 2;
-    confidence += 10;
-  }
-
-  if (text.includes("yes")) {
-    threat += currentFaq.impact?.threat || 1;
-    confidence += currentFaq.impact?.confidence || 10;
-  }
-
-  if (!["yes", "no"].includes(text)) {
-    confidence += 10;
-  }
-
-  // LIVE PRECAUTION
-  let precaution = null;
-  if (threat >= 5) {
-    precaution =
-      "⚠️ Please consider turning off the appliance to avoid further damage.";
-  }
-
-  const nextIndex = session.currentQuestionIndex + 1;
-
-  // FINISH EARLY IF CONFIDENT
-  if (nextIndex >= faqs.length || confidence > 80) {
-    return {
-      done: true,
-      result: generateFinalDiagnosis(
-        categoryData,
-        threat,
-        confidence,
-        session.problem
-      ),
-    };
-  }
-
-  return {
-    done: false,
-    nextIndex,
-    nextQuestion: humanize(faqs[nextIndex].question),
-    precaution,
-    threatScore: threat,
-    confidence,
-  };
-};
-
-// FINAL RESULT
-const generateFinalDiagnosis = (categoryData, threat, confidence, problem) => {
-  let level = "low";
-  if (threat >= 6) level = "high";
-  else if (threat >= 3) level = "medium";
-
-  let diagnosis = "";
-
-  if (level === "low") {
-    diagnosis = "This seems like a minor issue you can fix yourself.";
-  } else if (level === "medium") {
-    diagnosis =
-      "This might need attention. Try the solutions, or consider a technician.";
+  if (imageBase64) {
+    groqResult = await analyzeImage(imageBase64, imageMime, problem);
   } else {
-    diagnosis =
-      "This looks serious. I strongly recommend professional help.";
+    groqResult = await analyzeInput([{ role: "user", content: problem }]);
+  }
+
+  if (!groqResult) throw new Error("AI analysis failed");
+
+  // Save session
+  const session = await AISession.create({
+    user: userId,
+    problem,
+    category: groqResult.category || "general",
+    conversationHistory: [
+      { role: "user", content: problem },
+      { role: "assistant", content: JSON.stringify(groqResult) }
+    ],
+    threatScore: groqResult.threatLevel === "high" ? 8 : groqResult.threatLevel === "medium" ? 4 : 1,
+    confidence: groqResult.confidence || 50,
+    isCompleted: groqResult.type === "result",
+    answers: []
+  });
+
+  if (groqResult.type === "result") {
+    return await formatResult(groqResult, session._id);
   }
 
   return {
-    threatLevel: level,
-    confidence,
-    diagnosis,
-    solutions: categoryData.solutions[level],
-    precautions: categoryData.precautions || [],
-    workers: level !== "low" ? findBestWorkers(categoryData.type, problem) : [],
+    type: "question",
+    sessionId: session._id,
+    question: groqResult.question,
+    category: groqResult.category,
+    confidence: groqResult.confidence
   };
 };
 
-// QUICK DIAGNOSE
-exports.quickDiagnose = (problem) => {
-  const category = detectCategory(problem);
+// ─── CONTINUE SESSION ─────────────────────────────────────────────────────────
+exports.continueSession = async (sessionId, userAnswer) => {
+  const session = await AISession.findById(sessionId);
+  if (!session) throw new Error("Session not found");
+
+  session.conversationHistory.push({ role: "user", content: userAnswer });
+  session.answers.push({ question: "follow-up", answer: userAnswer });
+
+  const groqResult = await analyzeInput(session.conversationHistory);
+  if (!groqResult) throw new Error("AI analysis failed");
+
+  session.conversationHistory.push({
+    role: "assistant",
+    content: JSON.stringify(groqResult)
+  });
+  session.confidence = groqResult.confidence || session.confidence;
+  session.category = groqResult.category || session.category;
+
+  if (groqResult.type === "result") {
+    session.isCompleted = true;
+    session.threatScore = groqResult.threatLevel === "high" ? 8 : groqResult.threatLevel === "medium" ? 4 : 1;
+  }
+
+  await session.save();
+
+  if (groqResult.type === "result") {
+    return await formatResult(groqResult, session._id);
+  }
 
   return {
-    category,
-    message: "Basic diagnosis complete.",
-    suggestion: "Start full AI chat for detailed help.",
+    type: "question",
+    sessionId: session._id,
+    question: groqResult.question,
+    category: groqResult.category,
+    confidence: groqResult.confidence
+  };
+};
+
+// ─── RECHECK SESSION ──────────────────────────────────────────────────────────
+exports.recheckSession = async (sessionId, isFixed) => {
+  const session = await AISession.findById(sessionId);
+  if (!session) throw new Error("Session not found");
+
+  if (isFixed) {
+    session.isCompleted = true;
+    await session.save();
+    return { type: "resolved", message: "Great! Glad the issue is fixed. 🎉" };
+  }
+
+  // Not fixed — escalate
+  session.conversationHistory.push({
+    role: "user",
+    content: "The steps did not fix my problem. Please re-evaluate, escalate if needed, and provide better guidance."
+  });
+
+  const groqResult = await analyzeInput(session.conversationHistory);
+  if (!groqResult) throw new Error("Recheck failed");
+
+  session.conversationHistory.push({
+    role: "assistant",
+    content: JSON.stringify(groqResult)
+  });
+
+  // Force escalate threat level
+  if (groqResult.threatLevel === "low") groqResult.threatLevel = "medium";
+  else if (groqResult.threatLevel === "medium") groqResult.threatLevel = "high";
+
+  session.threatScore = groqResult.threatLevel === "high" ? 8 : 4;
+  session.isCompleted = groqResult.type === "result";
+  await session.save();
+
+  if (groqResult.type === "result") {
+    const result = await formatResult(groqResult, session._id);
+    return { ...result, isRecheck: true };
+  }
+
+  return {
+    type: "question",
+    sessionId: session._id,
+    question: groqResult.question,
+    confidence: groqResult.confidence
   };
 };
