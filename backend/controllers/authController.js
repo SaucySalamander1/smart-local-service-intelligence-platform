@@ -100,41 +100,36 @@ exports.loginUser = async (req, res) => {
 ADMIN LOGIN
 */
 exports.adminLogin = async (req, res) => {
-
   try {
+    const { email, password } = req.body;
 
-    const { email, password } = req.body
+    const user = await User.findOne({ email });
 
-    const user = await User.findOne({ email, role: "admin" })
-
-    if (!user) {
-      return res.status(404).json({ message: "Admin not found" })
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Not an admin account" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" })
+      return res.status(401).json({ message: "Invalid password" });
     }
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
-    )
+    );
 
     res.json({
       token,
       id: user._id,
       name: user.name,
       role: user.role
-    })
+    });
 
   } catch (error) {
-
-    console.error(error)
-    res.status(500).json({ message: "Server error" })
-
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
-
-}
+};
