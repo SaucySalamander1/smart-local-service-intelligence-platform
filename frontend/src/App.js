@@ -20,6 +20,11 @@ import AIChat from "./pages/AIChat";
 import ResultPage from "./pages/ResultPage";
 import PostJob from "./pages/PostJob";
 
+//Job pages
+import MyJobs from "./pages/Customer/MyJobs";
+import JobDetail from "./pages/Customer/JobDetail";
+import AdminJobs from "./pages/Admin/AdminJobs";
+
 // Dashboard pages
 import CustomerDashboard from "./pages/Customer/Dashboard";
 import BrowseWorkers from "./pages/Customer/BrowseWorkers";
@@ -60,6 +65,10 @@ function App() {
         element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
       <Route path="/customer/browse-workers"
         element={<ProtectedRoute role="customer"><BrowseWorkers /></ProtectedRoute>} />
+      <Route path="/customer/my-jobs"
+        element={<ProtectedRoute role="customer"><MyJobs /></ProtectedRoute>}/>
+      <Route path="/customer/jobs/:id"
+        element={<ProtectedRoute role="customer"><JobDetail /></ProtectedRoute>}/>
 
       {/* ── WORKER PROFILE (public) ── */}
       <Route path="/worker-profile/:workerId" element={<WorkerProfile />} />
@@ -73,6 +82,10 @@ function App() {
       {/* ── ADMIN ── */}
       <Route path="/admin/dashboard"
         element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/jobs"
+        element={<ProtectedRoute role="admin"><AdminJobs /></ProtectedRoute>}/>
+
+      
 
     </Routes>
   );

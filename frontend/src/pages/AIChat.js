@@ -1,8 +1,15 @@
 // frontend/src/pages/AIChat.js
+
 import { useState, useEffect, useRef, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { startAISession, continueAISession } from "../api/ai";
 import { AuthContext } from "../context/AuthContext";
+import { ArrowLeft } from "lucide-react";
+
+// 👉 Import your navbars (adjust paths if needed)
+import CustomerNavbar from "../components/Navbars/CustomerNavbar";
+import WorkerNavbar from "../components/Navbars/WorkerNavbar";
+import AdminNavbar from "../components/Navbars/AdminNavbar";
 
 export default function AIChat() {
   const { user } = useContext(AuthContext);
@@ -63,7 +70,11 @@ export default function AIChat() {
     setImagePreview(null);
 
     try {
-      const result = await startAISession(msg, image?.base64 || null, image?.mime || null);
+      const result = await startAISession(
+        msg,
+        image?.base64 || null,
+        image?.mime || null
+      );
       setImage(null);
       setSessionId(result.sessionId);
       handleResponse(result);
@@ -100,13 +111,50 @@ export default function AIChat() {
     }
   };
 
+  // 👉 Role-based navbar renderer
+  const renderNavbar = () => {
+    if (!user) return null;
+
+    switch (user.role) {
+      case "customer":
+        return <CustomerNavbar />;
+      case "worker":
+        return <WorkerNavbar />;
+      case "admin":
+        return <AdminNavbar />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+
+      {/* Navbar */}
+      {renderNavbar()}
 
       {/* Header */}
-      <div className="p-4 bg-blue-600 text-white text-center shadow">
-        <h1 className="text-xl font-bold">🤖 AI Home Assistant</h1>
-        <p className="text-xs text-blue-100 mt-0.5">Describe your problem or upload a photo</p>
+      <div className="p-4 bg-blue-600 text-white flex items-center justify-between shadow">
+        
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-sm hover:opacity-80"
+        >
+          <ArrowLeft size={18} />
+          Back
+        </button>
+
+        {/* Title */}
+        <div className="text-center flex-1">
+          <h1 className="text-xl font-bold">🤖 AI Home Assistant</h1>
+          <p className="text-xs text-blue-100 mt-0.5">
+            Describe your problem or upload a photo
+          </p>
+        </div>
+
+        {/* Spacer */}
+        <div className="w-12"></div>
       </div>
 
       {/* Messages */}
@@ -120,15 +168,25 @@ export default function AIChat() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-xs md:max-w-md rounded-2xl p-3 ${
-              msg.role === "user"
-                ? "bg-blue-500 text-white rounded-br-none"
-                : "bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100"
-            }`}>
+          <div
+            key={i}
+            className={`flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-xs md:max-w-md rounded-2xl p-3 ${
+                msg.role === "user"
+                  ? "bg-blue-500 text-white rounded-br-none"
+                  : "bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100"
+              }`}
+            >
               {msg.content.image && (
-                <img src={msg.content.image} alt="uploaded"
-                  className="rounded-lg mb-2 max-h-36 object-cover w-full" />
+                <img
+                  src={msg.content.image}
+                  alt="uploaded"
+                  className="rounded-lg mb-2 max-h-36 object-cover w-full"
+                />
               )}
               <p className="text-sm leading-relaxed">{msg.content.text}</p>
             </div>
@@ -139,8 +197,9 @@ export default function AIChat() {
           <div className="flex justify-start">
             <div className="bg-white shadow-sm rounded-2xl rounded-bl-none p-3 border border-gray-100">
               <div className="flex space-x-1">
-                {[0, 150, 300].map(delay => (
-                  <div key={delay}
+                {[0, 150, 300].map((delay) => (
+                  <div
+                    key={delay}
                     className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
                     style={{ animationDelay: `${delay}ms` }}
                   />
@@ -149,31 +208,53 @@ export default function AIChat() {
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Image Preview */}
       {imagePreview && (
         <div className="px-4 py-2 bg-white border-t flex items-center gap-2">
-          <img src={imagePreview} alt="preview" className="h-14 w-14 object-cover rounded-lg border" />
+          <img
+            src={imagePreview}
+            alt="preview"
+            className="h-14 w-14 object-cover rounded-lg border"
+          />
           <div className="flex-1">
             <p className="text-xs text-gray-500">Image ready to send</p>
           </div>
-          <button onClick={() => { setImage(null); setImagePreview(null); }}
-            className="text-red-400 text-sm hover:text-red-600">✕ Remove</button>
+          <button
+            onClick={() => {
+              setImage(null);
+              setImagePreview(null);
+            }}
+            className="text-red-400 text-sm hover:text-red-600"
+          >
+            ✕ Remove
+          </button>
         </div>
       )}
 
       {/* Input */}
       <div className="p-4 bg-white border-t shadow-sm">
         <div className="flex gap-2 items-center">
+          
           {/* Image upload */}
-          <button onClick={() => fileInputRef.current.click()}
-            className="p-2 text-gray-400 hover:text-blue-500 transition text-xl" title="Upload photo">
+          <button
+            onClick={() => fileInputRef.current.click()}
+            className="p-2 text-gray-400 hover:text-blue-500 transition text-xl"
+            title="Upload photo"
+          >
             📷
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*"
-            className="hidden" onChange={handleImageUpload} />
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
 
           {/* Text input */}
           <input
@@ -184,13 +265,19 @@ export default function AIChat() {
                 sessionId ? handleAnswer(input) : handleStart();
               }
             }}
-            placeholder={waitingForAnswer ? "Type your answer..." : "Describe your problem..."}
+            placeholder={
+              waitingForAnswer
+                ? "Type your answer..."
+                : "Describe your problem..."
+            }
             className="flex-1 px-4 py-2 border rounded-xl outline-none focus:border-blue-400 text-sm"
           />
 
           {/* Send */}
           <button
-            onClick={() => sessionId ? handleAnswer(input) : handleStart()}
+            onClick={() =>
+              sessionId ? handleAnswer(input) : handleStart()
+            }
             disabled={loading}
             className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition text-sm font-semibold"
           >
