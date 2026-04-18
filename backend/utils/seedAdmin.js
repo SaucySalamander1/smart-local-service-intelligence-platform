@@ -7,7 +7,7 @@ const connectDB = require('../config/db');
 connectDB();
 
 const seedAdmin = async () => {
-  const existing = await User.findOne({ role: 'admin' });
+  const existing = await User.findOne({ email: 'admin@example.com' });
   if (existing) {
     console.log('Admin already exists');
     process.exit();
