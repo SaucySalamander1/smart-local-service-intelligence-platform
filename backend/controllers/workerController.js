@@ -5,7 +5,7 @@ const User = require('../models/User');
 // Supports: serviceArea, skill, category, area, sort (emergency|rating|jobs)
 exports.getWorkers = async (req, res) => {
   try {
-    const { serviceArea, skill, category, area, sort } = req.query;
+    const { serviceArea, skill, category, area, sort, location } = req.query;
 
     let query = { role: 'worker', isApproved: true };
 
@@ -21,8 +21,13 @@ exports.getWorkers = async (req, res) => {
       query.skills = { $in: [skillFilter] };
     }
 
+    // Filter by location (substring matching)
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+
     let workers = await User.find(query)
-      .select('name email skills rating experience serviceArea phone bio profilePicture availability reviewCount certifications jobsDone payRange')
+      .select('name email skills rating experience serviceArea location phone bio profilePicture availability reviewCount certifications jobsDone payRange')
       .sort({ rating: -1 });
 
     // ✅ Emergency sort — online first, then composite score
@@ -56,7 +61,8 @@ exports.getWorkers = async (req, res) => {
 exports.getWorkerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const worker = await User.findById(id);
+    const worker = await User.findById(id)
+      .select('role name email skills rating experience serviceArea location phone bio profilePicture availability reviewCount certifications jobsDone payRange isApproved');
 
     if (!worker || worker.role !== 'worker') {
       return res.status(404).json({ success: false, message: 'Worker not found' });
@@ -98,25 +104,27 @@ exports.getAvailableSkills = async (req, res) => {
 exports.updateWorkerProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, bio, phone, skills, experience, serviceArea, profilePicture, availability, certifications, payRange } = req.body;
+    const { name, bio, phone, skills, experience, serviceArea, location, profilePicture, availability, certifications, payRange } = req.body;
 
     const worker = await User.findById(id);
     if (!worker || worker.role !== 'worker') {
       return res.status(404).json({ success: false, message: 'Worker not found' });
     }
 
-    if (name) worker.name = name;
-    if (bio) worker.bio = bio;
-    if (phone) worker.phone = phone;
-    if (skills) worker.skills = skills;
+    if (name !== undefined) worker.name = name;
+    if (bio !== undefined) worker.bio = bio;
+    if (phone !== undefined) worker.phone = phone;
+    if (skills !== undefined) worker.skills = skills;
     if (experience !== undefined) worker.experience = experience;
-    if (serviceArea) worker.serviceArea = serviceArea;
-    if (profilePicture) worker.profilePicture = profilePicture;
-    if (availability) worker.availability = availability;
-    if (certifications) worker.certifications = certifications;
-    if (payRange) worker.payRange = payRange;
+    if (serviceArea !== undefined) worker.serviceArea = serviceArea;
+    if (location !== undefined) worker.location = location;
+    if (profilePicture !== undefined) worker.profilePicture = profilePicture;
+    if (availability !== undefined) worker.availability = availability;
+    if (certifications !== undefined) worker.certifications = certifications;
+    if (payRange !== undefined) worker.payRange = payRange;
 
     await worker.save();
+    console.log('✅ Worker updated:', { id, location: worker.location });
     res.status(200).json({ success: true, message: 'Profile updated successfully', data: worker });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });

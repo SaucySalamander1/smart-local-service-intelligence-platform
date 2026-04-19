@@ -3,6 +3,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import CustomerNavBar from "../../components/Navbars/CustomerNavbar";
+import ChatModal from "../../components/ChatModal";
+import RatingModal from "../../components/RatingModal";
+import { verifyOTP } from "../../api/payments";
+import { submitRating } from "../../api/ratings";
 
 const API = "http://localhost:5000/api/jobs";
 
@@ -13,6 +17,11 @@ export default function JobDetail() {
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatUserId, setChatUserId] = useState(null);
+  const [chatUserName, setChatUserName] = useState(null);
+  const [chatUserPicture, setChatUserPicture] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   useEffect(() => { fetchJob(); }, [id]);
 
@@ -47,20 +56,42 @@ export default function JobDetail() {
     setActionLoading(false);
   };
 
-  const handleConfirmCompletion = async () => {
-    if (!window.confirm("Confirm that the job has been completed?")) return;
+  const handlePayNow = async () => {
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.put(`${API}/${id}/confirm`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert("Job confirmed as completed! Please pay admin to release worker payment.");
-      fetchJob();
+      const result = await verifyOTP(id, "123456");
+      if (result.success) {
+        alert("✅ Payment completed! Job is now marked as paid.");
+        await fetchJob();
+        // Show rating modal after payment
+        setShowRatingModal(true);
+      } else {
+        alert("❌ Payment failed: " + result.message);
+      }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to confirm");
+      alert("❌ Payment error: " + (err.response?.data?.message || err.message));
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
+  };
+
+  const handleRatingSubmit = async (ratingData) => {
+    try {
+      await submitRating(id, job.hiredWorker._id, ratingData.rating, ratingData.review);
+      alert("✅ Rating submitted! Thank you for your feedback.");
+      setShowRatingModal(false);
+      await fetchJob();
+    } catch (err) {
+      console.error("Error submitting rating:", err);
+      throw err;
+    }
+  };
+
+  const handleOpenChat = (userId, userName, userPicture) => {
+    setChatUserId(userId);
+    setChatUserName(userName);
+    setChatUserPicture(userPicture);
+    setIsChatOpen(true);
   };
 
   if (loading) {
@@ -144,35 +175,26 @@ export default function JobDetail() {
             </div>
           </div>
 
-          {/* Confirm completion button */}
+          {/* Pay Now button */}
           {job.status === "in_progress" && job.workerMarkedDone && !job.customerConfirmed && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
               <p className="text-green-700 font-semibold text-sm mb-2">
                 ✅ Worker has marked this job as done!
               </p>
               <p className="text-green-600 text-xs mb-3">
-                Please confirm completion to release payment to the worker through admin.
+                Click "Pay Now" to complete payment. The work will be automatically marked as completed.
               </p>
-              <button onClick={handleConfirmCompletion} disabled={actionLoading}
+              <button onClick={handlePayNow} disabled={actionLoading}
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition disabled:opacity-50">
-                {actionLoading ? "Confirming..." : "✅ Confirm Job Completed"}
+                {actionLoading ? "⏳ Processing..." : "💰 Pay Now"}
               </button>
             </div>
           )}
 
           {/* Payment notice */}
-          {job.status === "completed" && !job.adminPaid && (
-            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <p className="text-yellow-700 font-semibold text-sm">💰 Payment Pending</p>
-              <p className="text-yellow-600 text-xs mt-1">
-                Please pay admin to release payment to the worker. Contact admin for payment details.
-              </p>
-            </div>
-          )}
-
           {job.status === "paid" && (
-            <div className="mt-4 bg-purple-50 border border-purple-200 rounded-xl p-3 text-center">
-              <p className="text-purple-700 font-semibold text-sm">💰 Payment Released — Job Complete!</p>
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+              <p className="text-green-700 font-semibold text-sm">✅ Payment Completed — Job Finished!</p>
             </div>
           )}
         </div>
@@ -198,7 +220,7 @@ export default function JobDetail() {
                     📞 Call
                   </a>
                 )}
-                <button onClick={() => navigate(`/messages?workerId=${job.hiredWorker._id}`)}
+                <button onClick={() => handleOpenChat(job.hiredWorker._id, job.hiredWorker.name, job.hiredWorker.profilePicture)}
                   className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition">
                   💬 Chat
                 </button>
@@ -279,7 +301,7 @@ export default function JobDetail() {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => navigate(`/messages?workerId=${bid.worker?._id}`)}
+                        onClick={() => handleOpenChat(bid.worker?._id, bid.worker?.name, bid.worker?.profilePicture)}
                         className="flex-1 border border-blue-500 text-blue-600 py-2 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
                         💬 Chat First
                       </button>
@@ -303,6 +325,25 @@ export default function JobDetail() {
         )}
 
       </div>
+
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        otherUserId={chatUserId}
+        otherUserName={chatUserName}
+        otherUserPicture={chatUserPicture}
+      />
+
+      {showRatingModal && job?.hiredWorker && (
+        <RatingModal
+          workerId={job.hiredWorker._id}
+          workerName={job.hiredWorker.name}
+          jobTitle={job.title}
+          onSubmit={handleRatingSubmit}
+          onClose={() => setShowRatingModal(false)}
+        />
+      )}
+
     </div>
   );
 }

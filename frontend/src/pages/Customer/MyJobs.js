@@ -34,7 +34,7 @@ export default function MyJobs() {
       const res = await axios.get(`${API}/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setJobs(res.data);
+      setJobs(res.data.data || res.data);
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
     }

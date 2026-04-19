@@ -1,7 +1,13 @@
 // backend/services/groqService.js
 const Groq = require("groq-sdk");
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let groq;
+
+if (process.env.GROQ_API_KEY) {
+  groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+} else {
+  console.warn("⚠️ GROQ_API_KEY not set. AI features will be unavailable.");
+}
 
 const SYSTEM_PROMPT = `
 You are an expert AI assistant for a Smart Local Service Platform in Bangladesh.

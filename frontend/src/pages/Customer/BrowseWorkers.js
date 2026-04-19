@@ -12,6 +12,7 @@ const BrowseWorkers = () => {
   const [skills, setSkills] = useState([]);
   const [selectedServiceArea, setSelectedServiceArea] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -62,8 +63,14 @@ const BrowseWorkers = () => {
       );
     }
 
+    if (selectedLocation) {
+      filtered = filtered.filter(w =>
+        w.location && w.location.toLowerCase().includes(selectedLocation.toLowerCase())
+      );
+    }
+
     setFilteredWorkers(filtered);
-  }, [selectedServiceArea, selectedSkill, workers]);
+  }, [selectedServiceArea, selectedSkill, selectedLocation, workers]);
 
   const handleServiceAreaChange = (e) => {
     setSelectedServiceArea(e.target.value);
@@ -73,9 +80,29 @@ const BrowseWorkers = () => {
     setSelectedSkill(e.target.value);
   };
 
+  const handleLocationChange = (e) => {
+    setSelectedLocation(e.target.value);
+  };
+
   const clearFilters = () => {
     setSelectedServiceArea('');
     setSelectedSkill('');
+    setSelectedLocation('');
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      const workersData = await getWorkers();
+      setWorkers(workersData.data);
+      setFilteredWorkers(workersData.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to refresh workers. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,7 +118,7 @@ const BrowseWorkers = () => {
         {/* Filters Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Filters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Service Area Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -125,14 +152,37 @@ const BrowseWorkers = () => {
                 ))}
               </select>
             </div>
+
+            {/* Location Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location
+              </label>
+              <input
+                type="text"
+                value={selectedLocation}
+                onChange={handleLocationChange}
+                placeholder="e.g., mirpur"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
           </div>
 
-          <button
-            onClick={clearFilters}
-            className="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition"
-          >
-            Clear Filters
-          </button>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition"
+            >
+              Clear Filters
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition disabled:opacity-50"
+            >
+              🔄 Refresh
+            </button>
+          </div>
         </div>
 
         {/* Results Count */}

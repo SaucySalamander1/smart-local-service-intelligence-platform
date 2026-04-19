@@ -20,12 +20,19 @@ const HeroSection = () => {
       );
 
       const data = await res.json();
-      const urls = data.results.map((img) => img.urls.regular);
+      
+      if (!res.ok || !data.results) {
+        console.error("Unsplash API error:", data);
+        setImages([]); // Use empty array as fallback
+        return;
+      }
 
+      const urls = data.results.map((img) => img.urls.regular);
       setImages(urls);
       setCurrent(0);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch images:", err);
+      setImages([]); // Use empty array as fallback
     }
   };
 
