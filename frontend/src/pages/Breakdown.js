@@ -1,82 +1,76 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
+import jsPDF from "jspdf";
 
 export default function Breakdown() {
-  const [service, setService] = useState("plumbing");
-  const [urgency, setUrgency] = useState("normal");
-  const [extraParts, setExtraParts] = useState(false);
+  const location = useLocation();
+  const total = location.state?.total || 0;
 
-  const [data, setData] = useState(null);
+  const [discounted, setDiscounted] = useState(total);
 
-  const calculate = async () => {
-    const res = await fetch("http://localhost:5000/api/deema/breakdown", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        service,
-        urgency,
-        extraParts
-      })
-    });
+  const breakdown = [
+    { name: "Labor", value: total * 0.4 },
+    { name: "Materials", value: total * 0.3 },
+    { name: "Transport", value: total * 0.1 },
+    { name: "Tax", value: total * 0.1 },
+    { name: "Service Fee", value: total * 0.1 },
+  ];
 
-    const result = await res.json();
-    setData(result);
+  const applyDiscount = () => {
+    setDiscounted(Math.round(total * 0.9));
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`Total Cost: $${discounted}`, 10, 10);
+    doc.save("invoice.pdf");
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <div style={{ background: "#fff", padding: "20px", borderRadius: "10px" }}>
-        
-        <h2 style={{ color: "#0041C2" }}>📊 Smart Cost Calculator</h2>
+    <div className="p-10">
+      <h1 className="text-3xl font-bold mb-6">Cost Breakdown</h1>
 
-        {/* SERVICE */}
-        <select onChange={(e)=>setService(e.target.value)}>
-          <option value="plumbing">Plumbing</option>
-          <option value="electrical">Electrical</option>
-          <option value="ac">AC</option>
-        </select>
-
-        {/* URGENCY */}
-        <select onChange={(e)=>setUrgency(e.target.value)}>
-          <option value="normal">Normal</option>
-          <option value="urgent">Urgent</option>
-          <option value="emergency">Emergency</option>
-        </select>
-
-        {/* EXTRA PARTS */}
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              onChange={(e)=>setExtraParts(e.target.checked)}
-            />
-            Need extra parts (+200)
-          </label>
+      {breakdown.map((item, i) => (
+        <div key={i} className="flex justify-between mb-3">
+          <span title="Calculated based on service details">
+            {item.name}
+          </span>
+          <span>${item.value.toFixed(2)}</span>
         </div>
+      ))}
 
-        <button
-          onClick={calculate}
-          style={{
-            marginTop: "10px",
-            background: "#0041C2",
-            color: "white",
-            padding: "10px",
-            borderRadius: "8px"
-          }}
-        >
-          Calculate Cost
-        </button>
+      <div className="mt-4 font-bold text-xl">
+        Total: ${discounted}
+      </div>
 
-        {/* RESULT */}
-        {data && (
-          <div style={{ marginTop: "20px", background: "#f2f2f2", padding: "10px" }}>
-            <p>🔧 Labor: {data.labor}</p>
-            <p>🧩 Parts: {data.parts}</p>
-            <p>⚡ Urgency: {data.urgency}</p>
-            <hr/>
-            <h3>💰 Total: {data.total} BDT</h3>
-          </div>
-        )}
+      <button
+        onClick={applyDiscount}
+        className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded"
+      >
+        Apply Discount
+      </button>
 
+      <button
+        onClick={downloadPDF}
+        className="mt-4 ml-3 bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Download Invoice
+      </button>
+
+      <div className="mt-6 text-red-500">
+        ⚠ Extra charges may apply for emergency services
+      </div>
+
+      <div className="mt-6">
+        <h2 className="font-bold">Vendor Comparison</h2>
+        <p>Vendor A: ${total + 50}</p>
+        <p>Vendor B: ${total - 30}</p>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="font-bold">Price Trend</h2>
+        <p>Last Month: $250</p>
+        <p>This Month: $280</p>
       </div>
     </div>
   );

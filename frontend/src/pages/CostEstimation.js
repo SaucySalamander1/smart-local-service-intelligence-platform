@@ -1,51 +1,123 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CostEstimation() {
-  const [service, setService] = useState("plumbing");
-  const [urgency, setUrgency] = useState("normal");
-  const [result, setResult] = useState("");
+  const navigate = useNavigate();
 
-  const estimate = async () => {
-    setResult("Calculating...");
+  const [form, setForm] = useState({
+    service: "Plumbing",
+    property: "Apartment",
+    size: "Small",
+    urgency: "Normal",
+    quality: "Standard",
+    travel: "Worker comes",
+  });
 
-    const res = await fetch("http://localhost:5000/api/deema/estimate", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ service, urgency })
-    });
+  const [price, setPrice] = useState(null);
 
-    const data = await res.json();
-    setResult(data.estimated_cost + " BDT");
+  const calculate = () => {
+    let base = 200;
+
+    if (form.service === "Electrical") base += 80;
+    if (form.property === "House") base += 50;
+    if (form.size === "Large") base += 120;
+
+    if (form.urgency === "Urgent") base *= 1.3;
+    if (form.urgency === "Emergency") base *= 1.6;
+
+    if (form.quality === "Premium") base *= 1.5;
+
+    if (form.travel === "Worker comes") base += 60;
+    if (form.travel === "You go") base -= 20;
+
+    setPrice(Math.round(base));
   };
 
   return (
     <div className="p-10">
-      <div className="bg-white shadow-lg rounded-xl p-6 text-center">
-        <h2 className="text-2xl font-bold text-[#0041C2] mb-4">💰 Cost Estimation</h2>
+      <h1 className="text-3xl font-bold mb-6">Smart Cost Estimation</h1>
 
-        <select onChange={(e)=>setService(e.target.value)} className="p-2 m-2 border">
-          <option value="plumbing">Plumbing</option>
-          <option value="electrical">Electrical</option>
-          <option value="ac">AC</option>
-        </select>
+      {Object.keys(form).map((key) => (
+        <div key={key} className="mb-6">
+          <h2 className="text-lg font-bold capitalize mb-2">{key}</h2>
 
-        <select onChange={(e)=>setUrgency(e.target.value)} className="p-2 m-2 border">
-          <option value="normal">Normal</option>
-          <option value="urgent">Urgent</option>
-          <option value="emergency">Emergency</option>
-        </select>
+          <select
+            className="w-full p-2 border rounded text-sm"
+            value={form[key]}
+            onChange={(e) =>
+              setForm({ ...form, [key]: e.target.value })
+            }
+          >
+            {key === "service" && (
+              <>
+                <option>Plumbing</option>
+                <option>Electrical</option>
+                <option>Cleaning</option>
+              </>
+            )}
 
-        <br/>
+            {key === "property" && (
+              <>
+                <option>Apartment</option>
+                <option>House</option>
+              </>
+            )}
 
-        <button 
-          onClick={estimate}
-          className="mt-4 bg-[#0041C2] text-white px-6 py-2 rounded-lg hover:bg-blue-800"
+            {key === "size" && (
+              <>
+                <option>Small</option>
+                <option>Large</option>
+              </>
+            )}
+
+            {key === "urgency" && (
+              <>
+                <option>Normal</option>
+                <option>Urgent</option>
+                <option>Emergency</option>
+              </>
+            )}
+
+            {key === "quality" && (
+              <>
+                <option>Standard</option>
+                <option>Premium</option>
+              </>
+            )}
+
+            {key === "travel" && (
+              <>
+                <option>Worker comes</option>
+                <option>You go</option>
+              </>
+            )}
+          </select>
+        </div>
+      ))}
+
+      <button
+        onClick={calculate}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Calculate
+      </button>
+
+      {price && (
+        <div className="mt-6 text-xl font-bold">
+          Estimated Cost: ${price}
+        </div>
+      )}
+
+      {price && (
+        <button
+          onClick={() =>
+            navigate("/breakdown", { state: { total: price } })
+          }
+          className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
         >
-          Estimate Now
+          View Breakdown
         </button>
-
-        <p className="mt-4 text-lg font-semibold">{result}</p>
-      </div>
+      )}
     </div>
   );
 }

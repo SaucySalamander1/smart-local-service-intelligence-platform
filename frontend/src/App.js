@@ -13,7 +13,9 @@ import Services from "./pages/Services";
 import BecomeWorker from "./pages/BecomeWorker";
 import CostEstimation from "./pages/CostEstimation";
 import Breakdown from "./pages/Breakdown";
-import Review from "./pages/Review";
+import Warranty from "./pages/Warranty";
+import Dispute from "./pages/Dispute";
+import AdminDispute from "./pages/AdminDispute";
 
 // AI pages (full screen, no public layout)
 import AIChat from "./pages/AIChat";
@@ -46,7 +48,9 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/estimate" element={<CostEstimation />} />
         <Route path="/breakdown" element={<Breakdown />} />
-        <Route path="/review" element={<Review />} />
+        <Route path="/warranty" element={<Warranty />} />
+        <Route path="/dispute" element={<Dispute />} />
+        <Route path="/admin-dispute" element={<AdminDispute />} />
       </Route>
 
       {/* ── AI PAGES (full screen) ── */}
@@ -73,7 +77,8 @@ function App() {
       {/* ── ADMIN ── */}
       <Route path="/admin/dashboard"
         element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
-
+     
+             
     </Routes>
   );
 }

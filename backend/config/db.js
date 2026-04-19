@@ -1,13 +1,19 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+
+const state = {
+  connected: false,
+};
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    await mongoose.connect(process.env.MONGO_URI);
+    state.connected = true;
+    console.log("MongoDB Connected ✅");
   } catch (error) {
-    console.error('MongoDB connection failed:', error.message);
-    process.exit(1);
+    state.connected = false;
+    console.error("MongoDB connection failed:", error.message);
+    console.warn("Proceeding without MongoDB. Warranty and dispute data will use in-memory fallback.");
   }
 };
 
-module.exports = connectDB;
+module.exports = { connectDB, state };
