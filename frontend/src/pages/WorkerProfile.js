@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkerById, updateWorkerProfile, uploadProfilePicture } from '../api/workers';
+import { hireWorkerDirectly } from '../api/jobs';
 import { AuthContext } from '../context/AuthContext';
 import CustomerNavBar from '../components/Navbars/CustomerNavbar';
 import WorkerNavbar from '../components/Navbars/WorkerNavbar';
@@ -19,8 +20,20 @@ const WorkerProfile = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showUnavailableModal, setShowUnavailableModal] = useState(false);
+  const [showHireModal, setShowHireModal] = useState(false);
+  const [isHiring, setIsHiring] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // Hire form state
+  const [hireFormData, setHireFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    budget: '',
+    area: '',
+    urgency: 'normal'
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -30,6 +43,7 @@ const WorkerProfile = () => {
     skills: [],
     experience: 0,
     serviceArea: '',
+    location: '',
     availability: 'offline',
     certifications: ''
   });
@@ -55,6 +69,7 @@ const WorkerProfile = () => {
           skills: data.data.skills || [],
           experience: data.data.experience || 0,
           serviceArea: data.data.serviceArea || '',
+          location: data.data.location || '',
           availability: data.data.availability || 'offline',
           certifications: data.data.certifications || ''
         });
@@ -113,6 +128,8 @@ const WorkerProfile = () => {
     try {
       setLoading(true);
 
+      console.log('📤 Sending formData:', formData);
+
       // Upload file if selected
       if (selectedFile) {
         const uploadResponse = await uploadProfilePicture(workerId, selectedFile);
@@ -123,14 +140,15 @@ const WorkerProfile = () => {
       }
 
       // Update profile
-      await updateWorkerProfile(workerId, formData);
+      const response = await updateWorkerProfile(workerId, formData);
+      console.log('📥 Response from backend:', response);
       setWorker({ ...worker, ...formData });
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       setError('Failed to update profile');
-      console.error(err);
+      console.error('❌ Error saving profile:', err);
     } finally {
       setLoading(false);
     }
@@ -142,6 +160,50 @@ const WorkerProfile = () => {
     } else {
       setIsChatOpen(true);
     }
+  };
+
+  const handleHireClick = () => {
+    setShowHireModal(true);
+  };
+
+  const handleHireFormChange = (e) => {
+    const { name, value } = e.target;
+    setHireFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitHire = async (e) => {
+    e.preventDefault();
+    
+    if (!hireFormData.title || !hireFormData.description || !hireFormData.category || !hireFormData.area) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsHiring(true);
+    try {
+      console.log("🎯 Hiring worker:", workerId, "with data:", hireFormData);
+      const result = await hireWorkerDirectly(workerId, hireFormData);
+      console.log("✅ Worker hired successfully:", result);
+      alert('Worker hired successfully!');
+      setShowHireModal(false);
+      setHireFormData({
+        title: '',
+        description: '',
+        category: '',
+        budget: '',
+        area: '',
+        urgency: 'normal'
+      });
+      // Redirect to customer dashboard
+      setTimeout(() => navigate('/customer/dashboard'), 1000);
+    } catch (err) {
+      console.error("❌ Error hiring worker:", err);
+      alert(err.response?.data?.message || 'Failed to hire worker');
+    }
+    setIsHiring(false);
   };
 
   if (loading) {
@@ -397,6 +459,23 @@ const WorkerProfile = () => {
                   )}
                 </div>
 
+                {/* Location */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  {isOwner && isEditing ? (
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="e.g., mirpur,dhaka"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  ) : (
+                    <p className="text-gray-600">{worker.location || 'Not specified'}</p>
+                  )}
+                </div>
+
                 {/* Experience */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
@@ -503,9 +582,25 @@ const WorkerProfile = () => {
 
                 {/* Contact Button (only for customers viewing worker profile) */}
                 {!isOwner && user?.role === 'customer' && (
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleContactWorker}
+                      className="flex-1 bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition font-semibold text-lg"
+                    >
+                      💬 Message
+                    </button>
+                    <button
+                      onClick={handleHireClick}
+                      className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition font-semibold text-lg"
+                    >
+                      💼 Hire
+                    </button>
+                  </div>
+                )}
+                {!isOwner && user?.role === 'customer' && (
                   <button
                     onClick={handleContactWorker}
-                    className="w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition font-semibold text-lg"
+                    className="hidden w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition font-semibold text-lg"
                   >
                     Contact Worker
                   </button>
@@ -550,6 +645,141 @@ const WorkerProfile = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hire Worker Modal */}
+      {showHireModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Hire {worker?.name}</h2>
+              <button
+                onClick={() => setShowHireModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitHire} className="space-y-4">
+              {/* Job Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={hireFormData.title}
+                  onChange={handleHireFormChange}
+                  placeholder="e.g., Plumbing repair, Electrical work..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              {/* Job Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Job Description *
+                </label>
+                <textarea
+                  name="description"
+                  value={hireFormData.description}
+                  onChange={handleHireFormChange}
+                  placeholder="Describe the work you need done..."
+                  rows="4"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <input
+                  type="text"
+                  name="category"
+                  value={hireFormData.category}
+                  onChange={handleHireFormChange}
+                  placeholder="e.g., Plumbing, Electrical, Carpentry..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              {/* Area */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Area *
+                </label>
+                <input
+                  type="text"
+                  name="area"
+                  value={hireFormData.area}
+                  onChange={handleHireFormChange}
+                  placeholder="e.g., Mirpur, Gulshan, Banani..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              {/* Budget */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Budget (৳)
+                  </label>
+                  <input
+                    type="number"
+                    name="budget"
+                    value={hireFormData.budget}
+                    onChange={handleHireFormChange}
+                    placeholder="Budget amount (optional)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                {/* Urgency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Urgency
+                  </label>
+                  <select
+                    name="urgency"
+                    value={hireFormData.urgency}
+                    onChange={handleHireFormChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowHireModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400 transition font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isHiring}
+                  className="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50"
+                >
+                  {isHiring ? 'Hiring...' : '💼 Hire Worker'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

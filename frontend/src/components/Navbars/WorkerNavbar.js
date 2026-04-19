@@ -31,6 +31,10 @@ const WorkerNavBar = () => {
           Dashboard
         </Link>
 
+        <Link to="/worker/jobs" className="hover:text-orange-400 transition">
+          Jobs
+        </Link>
+
         <Link to="/worker/services" className="hover:text-orange-400 transition">
           My Services
         </Link>

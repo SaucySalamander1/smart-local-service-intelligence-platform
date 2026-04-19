@@ -15,10 +15,7 @@ const userSchema = new mongoose.Schema(
     rating: { type: Number, default: 0, min: 0, max: 5 },
     experience: { type: Number, default: 0 },
     serviceArea: { type: String },
-    location: {
-      latitude: { type: Number },
-      longitude: { type: Number }
-    },
+    location: { type: String }, // e.g., "mirpur,dhaka"
     profilePicture: { type: String },
     bio: { type: String },
     phone: { type: String },

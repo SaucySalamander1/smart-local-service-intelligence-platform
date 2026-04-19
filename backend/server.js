@@ -11,9 +11,12 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const workerRoutes = require("./routes/workerRoutes");
+const jobRoutes = require("./routes/jobRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const deemaRoutes = require("./routes/deemaRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const ratingRoutes = require("./routes/ratingRoutes");
 
 const { protect } = require("./middleware/authMiddleware");
 
@@ -41,9 +44,12 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/workers", workerRoutes);
+app.use("/api/jobs", jobRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/deema", deemaRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/ratings", ratingRoutes);
 
 app.get("/", (req, res) => res.send("API is working"));
 

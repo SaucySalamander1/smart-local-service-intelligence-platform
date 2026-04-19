@@ -11,26 +11,28 @@ const {
   acceptBid,
   workerMarkDone,
   customerConfirm,
+  hireWorkerDirectly,
   adminGetAllJobs,
   adminMarkPaid,
 } = require("../controllers/jobController");
 
-// ── CUSTOMER ──
-router.post("/", protect, postJob);                          // Post a job
-router.get("/my", protect, getMyJobs);                      // My posted jobs
-router.put("/:id/accept/:bidId", protect, acceptBid);       // Accept a bid
-router.put("/:id/confirm", protect, customerConfirm);       // Confirm completion
+// ── EXACT PATHS FIRST (highest priority) ──
+router.post("/", protect, postJob);                          // POST / - Post a job
+router.get("/", protect, browseJobs);                       // GET / - Browse open jobs
+router.get("/my", protect, getMyJobs);                      // GET /my - My jobs
+router.get("/admin/all", protect, adminGetAllJobs);         // GET /admin/all - All jobs
 
-// ── WORKER (teammate builds UI) ──
-router.post("/:id/bid", protect, submitBid);                // Submit a bid
-router.put("/:id/worker-done", protect, workerMarkDone);    // Mark as done
+// ── SPECIFIC NAMED PATHS (before parameter routes) ──
+router.post("/hire/:workerId", protect, hireWorkerDirectly); // POST /hire/:workerId - Hire worker
 
-// ── BROWSE (all users) ──
-router.get("/", protect, browseJobs);                       // Browse open jobs
-router.get("/:id", protect, getJobById);                    // Single job + bids
+// ── PARAMETER-BASED MULTI-SEGMENT ROUTES ──
+router.put("/:id/accept/:bidId", protect, acceptBid);       // PUT /:id/accept/:bidId - Accept bid
+router.put("/:id/confirm", protect, customerConfirm);       // PUT /:id/confirm - Confirm completion
+router.put("/:id/pay", protect, adminMarkPaid);             // PUT /:id/pay - Release payment
+router.post("/:id/bid", protect, submitBid);                // POST /:id/bid - Submit bid
+router.put("/:id/worker-done", protect, workerMarkDone);    // PUT /:id/worker-done - Mark done
 
-// ── ADMIN ──
-router.get("/admin/all", protect, adminGetAllJobs);         // All jobs
-router.put("/:id/pay", protect, adminMarkPaid);             // Release payment
+// ── GENERIC SINGLE-PARAMETER ROUTE (lowest priority - must be last) ──
+router.get("/:id", protect, getJobById);                    // GET /:id - Get job details
 
 module.exports = router;

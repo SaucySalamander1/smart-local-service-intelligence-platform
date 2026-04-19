@@ -6,44 +6,96 @@ const Bid = require("../models/Bid");
 // POST /api/jobs
 exports.postJob = async (req, res) => {
   try {
+    console.log("✅ postJob called");
+    console.log("📦 Request body:", req.body);
+    console.log("👤 User:", req.user);
+    
     const { title, description, category, budget, area, urgency } = req.body;
 
+    // Validation
     if (!title || !description || !category || !area) {
+      console.error("❌ Validation failed: Missing required fields");
       return res.status(400).json({ message: "Title, description, category and area are required." });
     }
 
+    if (!req.user || !req.user._id) {
+      console.error("❌ User not authenticated properly");
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    console.log("📝 Creating job with data:", { title, description, category, budget, area, urgency });
+
     const job = await Job.create({
       customer: req.user._id,
-      title, description, category,
+      title, 
+      description, 
+      category,
       budget: budget || 0,
-      area, urgency: urgency || "normal"
+      area, 
+      urgency: urgency || "normal"
     });
 
-    res.status(201).json({ message: "Job posted successfully", job });
+    console.log("✅ Job created successfully:", job._id);
+
+    res.status(201).json({ 
+      message: "Job posted successfully", 
+      job,
+      success: true
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to post job", error: err.message });
+    console.error("❌ Error posting job:", err.message);
+    console.error("Full error:", err);
+    res.status(500).json({ 
+      message: "Failed to post job", 
+      error: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 
-// ─── CUSTOMER: Get my jobs ────────────────────────────────────────────────────
+// ─── CUSTOMER/WORKER: Get my jobs ────────────────────────────────────────────
 // GET /api/jobs/my
 exports.getMyJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ customer: req.user._id })
-      .populate("hiredWorker", "name phone profilePicture rating serviceArea")
-      .populate("acceptedBid")
-      .sort({ createdAt: -1 });
+    let jobs = [];
+    
+    if (req.user.role === 'customer') {
+      // Customer: get jobs they posted
+      jobs = await Job.find({ customer: req.user._id })
+        .populate("hiredWorker", "name phone profilePicture rating serviceArea")
+        .populate("acceptedBid")
+        .sort({ createdAt: -1 });
 
-    // Get bid counts for each job
-    const jobsWithBidCount = await Promise.all(
-      jobs.map(async (job) => {
-        const bidCount = await Bid.countDocuments({ job: job._id });
-        return { ...job.toObject(), bidCount };
-      })
-    );
+      // Get bid counts for each job
+      const jobsWithBidCount = await Promise.all(
+        jobs.map(async (job) => {
+          const bidCount = await Bid.countDocuments({ job: job._id });
+          return { ...job.toObject(), bidCount };
+        })
+      );
 
-    res.json(jobsWithBidCount);
+      res.json({
+        success: true,
+        count: jobsWithBidCount.length,
+        data: jobsWithBidCount
+      });
+    } else if (req.user.role === 'worker') {
+      // Worker: get jobs they are hired for
+      jobs = await Job.find({ hiredWorker: req.user._id })
+        .populate("customer", "name phone email")
+        .populate("hiredWorker", "name phone profilePicture rating serviceArea")
+        .sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        count: jobs.length,
+        data: jobs
+      });
+    } else {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
   } catch (err) {
+    console.error("Error fetching my jobs:", err);
     res.status(500).json({ message: "Failed to fetch your jobs", error: err.message });
   }
 };
@@ -63,8 +115,13 @@ exports.browseJobs = async (req, res) => {
       .populate("customer", "name")
       .sort({ urgency: -1, createdAt: -1 }); // urgent first
 
-    res.json(jobs);
+    res.json({ 
+      success: true,
+      count: jobs.length,
+      data: jobs 
+    });
   } catch (err) {
+    console.error("Error browsing jobs:", err);
     res.status(500).json({ message: "Failed to browse jobs", error: err.message });
   }
 };
@@ -92,17 +149,33 @@ exports.getJobById = async (req, res) => {
 // POST /api/jobs/:id/bid
 exports.submitBid = async (req, res) => {
   try {
+    console.log("📤 Bid submission request - Job ID:", req.params.id);
+    console.log("📤 Worker ID:", req.user?._id);
+    console.log("📤 Request body:", req.body);
+
     const job = await Job.findById(req.params.id);
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    if (job.status !== "open") return res.status(400).json({ message: "Job is no longer open for bidding" });
+    if (!job) {
+      console.log("❌ Job not found:", req.params.id);
+      return res.status(404).json({ message: "Job not found" });
+    }
+    if (job.status !== "open") {
+      console.log("❌ Job is not open. Status:", job.status);
+      return res.status(400).json({ message: "Job is no longer open for bidding" });
+    }
 
     // Check if worker already bid
     const existingBid = await Bid.findOne({ job: job._id, worker: req.user._id });
-    if (existingBid) return res.status(400).json({ message: "You have already bid on this job" });
+    if (existingBid) {
+      console.log("❌ Worker has already bid on this job");
+      return res.status(400).json({ message: "You have already bid on this job" });
+    }
 
     const { price, message, estimatedTime, workerLocation, workerCategory } = req.body;
 
+    console.log("🔍 Parsed fields - price:", price, "message:", message, "estimatedTime:", estimatedTime);
+
     if (!price || !message || !estimatedTime) {
+      console.log("❌ Missing required fields");
       return res.status(400).json({ message: "Price, message and estimated time are required" });
     }
 
@@ -114,8 +187,10 @@ exports.submitBid = async (req, res) => {
       workerCategory: workerCategory || req.user.skills || []
     });
 
+    console.log("✅ Bid created successfully:", bid._id);
     res.status(201).json({ message: "Bid submitted successfully", bid });
   } catch (err) {
+    console.error("❌ Error in submitBid:", err.message);
     res.status(500).json({ message: "Failed to submit bid", error: err.message });
   }
 };
@@ -200,6 +275,48 @@ exports.customerConfirm = async (req, res) => {
     res.json({ message: "Job confirmed as completed! Please pay admin to release payment to worker.", job });
   } catch (err) {
     res.status(500).json({ message: "Failed to confirm job", error: err.message });
+  }
+};
+
+// ─── CUSTOMER: Hire a worker directly ─────────────────────────────────────────
+// POST /api/jobs/hire-worker/:workerId
+exports.hireWorkerDirectly = async (req, res) => {
+  try {
+    console.log("📤 Direct hire request - Worker ID:", req.params.workerId);
+    console.log("📤 Customer ID:", req.user?._id);
+    console.log("📤 Request body:", req.body);
+
+    const { title, description, category, budget, area, urgency } = req.body;
+
+    // Validation
+    if (!title || !description || !category || !area) {
+      return res.status(400).json({ message: "Title, description, category and area are required." });
+    }
+
+    const User = require("../models/User");
+    const worker = await User.findById(req.params.workerId);
+    if (!worker) return res.status(404).json({ message: "Worker not found" });
+    if (worker.role !== "worker") return res.status(400).json({ message: "User is not a worker" });
+
+    // Create job with worker immediately assigned
+    const job = await Job.create({
+      customer: req.user._id,
+      title,
+      description,
+      category,
+      budget: budget || 0,
+      area,
+      urgency: urgency || "normal",
+      status: "in_progress",
+      hiredWorker: req.params.workerId,
+      acceptedBid: null
+    });
+
+    console.log("✅ Worker hired directly! Job created:", job._id);
+    res.status(201).json({ message: "Worker hired successfully!", job });
+  } catch (err) {
+    console.error("❌ Error in hireWorkerDirectly:", err.message);
+    res.status(500).json({ message: "Failed to hire worker", error: err.message });
   }
 };
 

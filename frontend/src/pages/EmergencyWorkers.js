@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import ChatModal from "../components/ChatModal";
 
 const API = "http://localhost:5000/api/workers";
 
@@ -11,6 +12,10 @@ export default function EmergencyWorkers() {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [area, setArea] = useState(state?.area || "");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatUserId, setChatUserId] = useState(null);
+  const [chatUserName, setChatUserName] = useState(null);
+  const [chatUserPicture, setChatUserPicture] = useState(null);
   const category = state?.category || "general";
 
   useEffect(() => {
@@ -29,6 +34,13 @@ export default function EmergencyWorkers() {
       console.error("Failed to fetch workers:", err);
     }
     setLoading(false);
+  };
+
+  const handleOpenChat = (userId, userName, userPicture) => {
+    setChatUserId(userId);
+    setChatUserName(userName);
+    setChatUserPicture(userPicture);
+    setIsChatOpen(true);
   };
 
   return (
@@ -153,7 +165,7 @@ export default function EmergencyWorkers() {
                   </a>
                 )}
                 <button
-                  onClick={() => navigate(`/messages?workerId=${worker._id}`)}
+                  onClick={() => handleOpenChat(worker._id, worker.name, worker.profilePicture)}
                   className="flex-1 bg-blue-500 text-white py-2 rounded-xl text-sm hover:bg-blue-600 transition"
                 >
                   💬 Message
@@ -163,6 +175,14 @@ export default function EmergencyWorkers() {
           ))
         )}
       </div>
+
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        otherUserId={chatUserId}
+        otherUserName={chatUserName}
+        otherUserPicture={chatUserPicture}
+      />
     </div>
   );
 }

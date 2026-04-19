@@ -32,6 +32,8 @@ import BrowseWorkers from "./pages/Customer/BrowseWorkers";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerDashboard from "./pages/Worker/Dashboard";
 import WorkerServices from "./pages/Worker/Services";
+import WorkerJobs from "./pages/Worker/Jobs";
+import WorkerJobDetail from "./pages/Worker/JobDetail";
 import AdminDashboard from "./pages/Admin/Dashboard";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -79,6 +81,10 @@ function App() {
       {/* ── WORKER ── */}
       <Route path="/worker/dashboard"
         element={<ProtectedRoute role="worker"><WorkerDashboard /></ProtectedRoute>} />
+      <Route path="/worker/jobs"
+        element={<ProtectedRoute role="worker"><WorkerJobs /></ProtectedRoute>} />
+      <Route path="/worker/job-detail/:id"
+        element={<ProtectedRoute role="worker"><WorkerJobDetail /></ProtectedRoute>} />
       <Route path="/worker/services"
         element={<ProtectedRoute role="worker"><WorkerServices /></ProtectedRoute>} />
 

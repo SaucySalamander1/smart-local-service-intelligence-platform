@@ -40,11 +40,26 @@ export default function PostJob() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/jobs", form, {
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        category: form.category,
+        area: form.area.trim(),
+        urgency: form.urgency,
+        budget: form.budget ? parseInt(form.budget) : 0
+      };
+      console.log("📤 Posting job with payload:", payload);
+      console.log("🔑 Token:", token ? "✅ Present" : "❌ Missing");
+      const res = await axios.post("http://localhost:5000/api/jobs", payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log("✅ Job posted successfully! Response:", res.data);
       setSuccess(true);
     } catch (err) {
+      console.error("❌ Error posting job:");
+      console.error("Status:", err.response?.status);
+      console.error("Message:", err.response?.data?.message);
+      console.error("Full error:", err.response?.data);
       alert(err.response?.data?.message || "Failed to post job. Please try again.");
     }
     setLoading(false);
