@@ -8,13 +8,16 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.13.6",
     "framer-motion": "^12.38.0",
+    "axios": "^1.15.0",
+    "jspdf": "^4.2.1",
+
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1",
     "react-scripts": "5.0.1",
+    "react-toastify": "^11.0.5",
     "socket.io-client": "^4.8.3",
     "web-vitals": "^2.1.4"
   },
@@ -43,7 +46,9 @@
     ]
   },
   "devDependencies": {
+    "@typescript-eslint/scope-manager": "^5.61.0",
     "autoprefixer": "^10.4.27",
+    "eslint-plugin-jest": "^25.6.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19"
   }

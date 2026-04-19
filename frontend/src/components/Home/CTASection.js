@@ -16,7 +16,7 @@ const CTASection = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setBg((prev) => (prev + 1) % images.length);
-    }, 30000); // 30 sec
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -28,11 +28,9 @@ const CTASection = () => {
         backgroundImage: `url(https://source.unsplash.com/1600x900/?${images[bg]})`
       }}
     >
-      {/* overlay */}
       <div className="absolute inset-0 bg-black/60"></div>
 
       <div className="relative max-w-5xl mx-auto px-6 text-center">
-
         <div className="bg-white/10 backdrop-blur-lg p-10 rounded-3xl border border-white/20">
 
           <h2 className="text-3xl md:text-4xl font-bold text-white">
