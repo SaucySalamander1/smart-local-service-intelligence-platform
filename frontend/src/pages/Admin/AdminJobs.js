@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AdminNavBar from "../../components/Navbars/AdminNavbar";
 
-const API = "http://localhost:5000/api/jobs";
+const API = "http://localhost:5000/api/jobs";//
 
 const statusConfig = {
   open:        { label: "Open",        color: "bg-blue-100 text-blue-700",    icon: "📢" },
