@@ -16,6 +16,8 @@ import Breakdown from "./pages/Breakdown";
 import Warranty from "./pages/Warranty";
 import Dispute from "./pages/Dispute";
 import AdminDispute from "./pages/AdminDispute";
+import Cost from "./pages/Cost";
+import Support from "./pages/Support";
 
 // AI pages (full screen, no public layout)
 import AIChat from "./pages/AIChat";
@@ -59,6 +61,8 @@ function App() {
         <Route path="/warranty" element={<Warranty />} />
         <Route path="/dispute" element={<Dispute />} />
         <Route path="/admin-dispute" element={<AdminDispute />} />
+        <Route path="/cost" element={<Cost />} />
+        <Route path="/support" element={<Support />} />
       </Route>
 
       {/* ── AI PAGES (full screen) ── */}

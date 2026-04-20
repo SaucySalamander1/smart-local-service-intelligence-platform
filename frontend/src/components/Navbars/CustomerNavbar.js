@@ -34,6 +34,8 @@ const CustomerNavBar = () => {
         <Link to="/customer/browse-workers" className={linkClass("/customer/browse-workers")}>Browse Workers</Link>
         <Link to="/customer/my-jobs" className={linkClass("/customer/my-jobs")}>My Jobs</Link>
         <Link to="/customer/dashboard" className={linkClass("/customer/dashboard")}>Dashboard</Link>
+        <Link to="/cost" className={linkClass("/cost")}>Cost</Link>
+        <Link to="/support" className={linkClass("/support")}>Support</Link>
       </div>
 
       {/* Right side */}
