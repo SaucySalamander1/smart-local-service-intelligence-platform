@@ -6,6 +6,8 @@ const { Server } = require("socket.io");
 const path = require("path");
 require("dotenv").config();
 
+
+
 const { connectDB } = require("./config/db");
 const warrantyRoutes = require("./routes/warrantyRoutes");
 const disputeRoutes = require("./routes/disputeRoutes");
@@ -14,7 +16,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const workerRoutes = require("./routes/workerRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const messageRoutes = require("./routes/messageRoutes");
-//const aiRoutes = require("./routes/aiRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 const deemaRoutes = require("./routes/deemaRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const ratingRoutes = require("./routes/ratingRoutes");
@@ -27,11 +29,16 @@ const server = http.createServer(app);
 // ✅ SOCKET.IO SETUP
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5001"
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
+
+
 app.use((req, res, next) => {
   console.log("API HIT:", req.method, req.url);
   next();
@@ -41,7 +48,13 @@ app.use((req, res, next) => {
 connectDB();
 
 // ✅ MIDDLEWARE
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5001"
+  ],
+  credentials: true
+}));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/warranty", warrantyRoutes);
@@ -54,7 +67,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/workers", workerRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/messages", messageRoutes);
-//app.use("/api/ai", aiRoutes);
+app.use("/api/ai", aiRoutes);
 app.use("/api/deema", deemaRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/ratings", ratingRoutes);
