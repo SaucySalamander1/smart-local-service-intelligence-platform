@@ -34,6 +34,8 @@ const AdminNavBar = () => {
         <Link to="/admin/customers" className={linkClass("/admin/customers")}>Customers</Link>
         <Link to="/admin/jobs" className={linkClass("/admin/jobs")}>📋 Jobs</Link>
         <Link to="/admin/payments" className={linkClass("/admin/payments")}>💰 Payments</Link>
+        <Link to="/cost" className={linkClass("/cost")}>Cost</Link>
+        <Link to="/support" className={linkClass("/support")}>Support</Link>
       </div>
 
       {/* Right */}

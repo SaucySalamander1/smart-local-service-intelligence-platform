@@ -21,6 +21,8 @@ const HomeNavbar = () => {
         <Link to="/" className={linkClass("/")}>Home</Link>
         <Link to="/services" className={linkClass("/services")}>Services</Link>
         <Link to="/become-worker" className={linkClass("/become-worker")}>Become Worker</Link>
+        <Link to="/cost" className={linkClass("/cost")}>Cost</Link>
+        <Link to="/support" className={linkClass("/support")}>Support</Link>
         <Link to="/about" className={linkClass("/about")}>About</Link>
         <Link to="/contact" className={linkClass("/contact")}>Contact</Link>
       </div>

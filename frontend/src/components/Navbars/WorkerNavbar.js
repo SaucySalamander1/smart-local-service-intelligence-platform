@@ -43,6 +43,14 @@ const WorkerNavBar = () => {
           My Profile
         </Link>
 
+        <Link to="/cost" className="hover:text-orange-400 transition">
+          Cost
+        </Link>
+
+        <Link to="/support" className="hover:text-orange-400 transition">
+          Support
+        </Link>
+
       </div>
 
       <div className="flex items-center gap-6">
